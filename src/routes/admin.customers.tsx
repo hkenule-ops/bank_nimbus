@@ -13,7 +13,7 @@ export const Route = createFileRoute("/admin/customers")({
 const CUSTOMERS = Array.from({ length: 24 }).map((_, i) => ({
   id: "CUS-" + (10000 + i),
   name: ["Alex Morgan", "Priya Shah", "Marcus Lee", "Dana Owens", "Sofia García", "Jamal Rivers", "Yuki Tanaka", "Lena Fischer"][i % 8],
-  email: `user${i + 1}@demo.nimbus`,
+  email: `user${i + 1}@demo.bangueherutage`,
   type: ["Savings", "Current", "Business", "Premium"][i % 4],
   balance: Math.round((Math.random() * 50000 + 500) * 100) / 100,
   status: (["Active", "Active", "Active", "Pending Verification", "Suspended"] as const)[i % 5],

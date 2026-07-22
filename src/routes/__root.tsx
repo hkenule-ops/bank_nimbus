@@ -79,9 +79,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Nimbus Bank — Modern Digital Banking Simulation" },
-      { name: "description", content: "Nimbus Bank is a modern digital banking management and simulation platform for demonstrations, product design and education." },
-      { property: "og:title", content: "Nimbus Bank — Modern Digital Banking Simulation" },
+      { title: "Bangue Herutage Bank — Modern Digital Banking Simulation" },
+      { name: "description", content: "Bangue Herutage Bank is a modern digital banking management and simulation platform for demonstrations, product design and education." },
+      { property: "og:title", content: "Bangue Herutage Bank — Modern Digital Banking Simulation" },
       { property: "og:description", content: "A premium digital banking simulation platform. Customer portal, admin console, transfers, cards and reports." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

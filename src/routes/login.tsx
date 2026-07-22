@@ -9,23 +9,30 @@ import { useAuth } from "@/lib/mock-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in — Nimbus Bank" }, { name: "description", content: "Sign in to your Nimbus digital banking account." }] }),
+  head: () => ({ meta: [{ title: "Sign in — Bangue Herutage Bank" }, { name: "description", content: "Sign in to your Bangue Herutage digital banking account." }] }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const nav = useNavigate();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(id, pw)) {
-      toast.success("Welcome back");
-      nav({ to: "/dashboard" });
-    } else {
-      toast.error("Please enter your credentials");
+    setLoading(true);
+    try {
+      const ok = await login(id, pw);
+      if (ok) {
+        toast.success("Welcome back");
+        nav({ to: "/dashboard" });
+      } else {
+        toast.error("Please enter your credentials");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,17 +42,17 @@ function LoginPage() {
         <Logo className="mb-8 justify-center" />
         <Card className="glass-card p-8">
           <h1 className="text-2xl font-semibold">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Access your Nimbus account.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Access your Bangue Herutage account.</p>
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
               <Label htmlFor="id">Email or username</Label>
-              <Input id="id" value={id} onChange={(e) => setId(e.target.value)} placeholder="alex@demo.nimbus" className="mt-1.5" />
+              <Input id="id" value={id} onChange={(e) => setId(e.target.value)} placeholder="alex@demo.bangueherutage" className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="pw">Password</Label>
               <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className="mt-1.5" />
             </div>
-            <Button type="submit" className="w-full gradient-primary text-primary-foreground">Sign in</Button>
+            <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</Button>
           </form>
           <div className="mt-6 flex items-center justify-between text-sm">
             <Link to="/register" className="text-primary hover:underline">Create account</Link>

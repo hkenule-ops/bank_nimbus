@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { CreditCard, Snowflake, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/cards")({
-  head: () => ({ meta: [{ title: "Cards — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Cards — Bangue Herutage Bank" }] }),
   component: CardsPage,
 });
 
@@ -37,7 +37,7 @@ function CardsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Cards</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage your Nimbus debit and virtual cards.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage your Bangue Herutage debit and virtual cards.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => request("Virtual")}><Plus className="mr-2 h-4 w-4" /> Virtual</Button>
@@ -49,7 +49,7 @@ function CardsPage() {
           <div key={c.id} className={`relative overflow-hidden rounded-3xl p-6 text-primary-foreground shadow-elevated ${c.frozen ? "bg-muted text-foreground" : "gradient-brand"}`}>
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-xs opacity-80">Nimbus {c.type}</div>
+                <div className="text-xs opacity-80">Bangue Herutage {c.type}</div>
                 <div className="mt-1 text-lg font-semibold">{user.firstName} {user.lastName}</div>
               </div>
               <CreditCard className="h-6 w-6 opacity-90" />

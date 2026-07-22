@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Wallet, CreditCard, Send, BarChart3, Globe2, Smartphone, PiggyBank, Building2, GraduationCap, Briefcase, Users, Coins } from "lucide-react";
 
 export const Route = createFileRoute("/services")({
-  head: () => ({ meta: [{ title: "Services — Nimbus Bank" }, { name: "description", content: "Explore Nimbus banking services: accounts, transfers, cards and more." }] }),
+  head: () => ({ meta: [{ title: "Services — Bangue Herutage Bank" }, { name: "description", content: "Explore Bangue Herutage banking services: accounts, transfers, cards and more." }] }),
   component: Services,
 });
 

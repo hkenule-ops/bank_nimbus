@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { appScriptRequest, isAppScriptConfigured } from "./appscript";
 
 export type Role = "customer" | "admin";
 
@@ -32,17 +33,17 @@ interface AuthState {
   user: Customer | null;
   isAdmin: boolean;
   transactions: Transaction[];
-  login: (identifier: string, password: string) => boolean;
-  loginAdmin: (username: string, password: string) => boolean;
+  login: (identifier: string, password: string) => Promise<boolean>;
+  loginAdmin: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  register: (data: Partial<Customer>) => Customer;
-  updateBalance: (delta: number, description: string, type: "Credit" | "Debit") => void;
+  register: (data: Partial<Customer>) => Promise<Customer>;
+  updateBalance: (delta: number, description: string, type: "Credit" | "Debit") => Promise<void>;
 }
 
 const AuthCtx = createContext<AuthState | null>(null);
 
-const STORAGE_KEY = "nimbus_auth_v1";
-const TX_KEY = "nimbus_tx_v1";
+const STORAGE_KEY = "bangueherutage_auth_v1";
+const TX_KEY = "bangueherutage_tx_v1";
 
 function seedCustomer(overrides: Partial<Customer> = {}): Customer {
   return {
@@ -52,7 +53,7 @@ function seedCustomer(overrides: Partial<Customer> = {}): Customer {
     firstName: "Alex",
     lastName: "Morgan",
     username: "alex.morgan",
-    email: "alex@demo.nimbus",
+    email: "alex@demo.bangueherutage",
     phone: "+1 555 0100",
     accountType: "Savings Account",
     balance: 12450.75,
@@ -95,38 +96,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(STORAGE_KEY);
   };
 
-  const value: AuthState = {
-    user, isAdmin, transactions,
-    login: (identifier, password) => {
-      if (!identifier || !password) return false;
-      const u = seedCustomer({ email: identifier.includes("@") ? identifier : "alex@demo.nimbus", username: identifier.includes("@") ? "alex.morgan" : identifier });
-      persist(u, false);
-      return true;
-    },
-    loginAdmin: (username, password) => {
-      if (username === "admin" && password === "admin") {
-        persist(null, true);
+  const loginWithFallback = async (identifier: string, password: string) => {
+    if (!identifier || !password) return false;
+    if (isAppScriptConfigured()) {
+      const response = await appScriptRequest<Customer>("login", { identifier, password });
+      if (response.ok && response.data) {
+        persist(response.data, false);
         return true;
       }
       return false;
-    },
+    }
+
+    const u = seedCustomer({ email: identifier.includes("@") ? identifier : "alex@demo.bangueherutage", username: identifier.includes("@") ? "alex.morgan" : identifier });
+    persist(u, false);
+    return true;
+  };
+
+  const loginAdminWithFallback = async (username: string, password: string) => {
+    if (isAppScriptConfigured()) {
+      const response = await appScriptRequest<Customer>("loginAdmin", { username, password });
+      if (response.ok && response.data) {
+        persist(response.data, true);
+        return true;
+      }
+      return false;
+    }
+
+    if (username === "admin" && password === "admin") {
+      persist(null, true);
+      return true;
+    }
+    return false;
+  };
+
+  const registerWithFallback = async (data: Partial<Customer>) => {
+    if (isAppScriptConfigured()) {
+      const response = await appScriptRequest<Customer>("register", { data });
+      if (response.ok && response.data) {
+        persist(response.data, false);
+        return response.data;
+      }
+      return seedCustomer({ ...data, balance: 0, status: "Active" });
+    }
+
+    const u = seedCustomer({ ...data, balance: 0, status: "Active" });
+    persist(u, false);
+    return u;
+  };
+
+  const updateBalanceWithFallback = async (delta: number, description: string, type: "Credit" | "Debit") => {
+    if (!user) return;
+    const newBal = user.balance + (type === "Credit" ? delta : -delta);
+    const updated = { ...user, balance: newBal };
+    const tx: Transaction = {
+      id: "t" + Date.now(), date: new Date().toISOString(), type, description, amount: delta, balance: newBal, status: "Completed",
+    };
+    const newTx = [tx, ...transactions];
+    setTransactions(newTx);
+    localStorage.setItem(TX_KEY, JSON.stringify(newTx));
+    persist(updated, isAdmin);
+
+    if (isAppScriptConfigured()) {
+      void appScriptRequest("transfer", { delta, description, type, user: updated });
+    }
+  };
+
+  const value: AuthState = {
+    user, isAdmin, transactions,
+    login: async (identifier, password) => loginWithFallback(identifier, password),
+    loginAdmin: async (username, password) => loginAdminWithFallback(username, password),
     logout: () => persist(null, false),
-    register: (data) => {
-      const u = seedCustomer({ ...data, balance: 0, status: "Active" });
-      persist(u, false);
-      return u;
-    },
-    updateBalance: (delta, description, type) => {
-      if (!user) return;
-      const newBal = user.balance + (type === "Credit" ? delta : -delta);
-      const updated = { ...user, balance: newBal };
-      const tx: Transaction = {
-        id: "t" + Date.now(), date: new Date().toISOString(), type, description, amount: delta, balance: newBal, status: "Completed",
-      };
-      const newTx = [tx, ...transactions];
-      setTransactions(newTx);
-      localStorage.setItem(TX_KEY, JSON.stringify(newTx));
-      persist(updated, isAdmin);
+    register: async (data) => registerWithFallback(data),
+    updateBalance: async (delta, description, type) => {
+      await updateBalanceWithFallback(delta, description, type);
     },
   };
 

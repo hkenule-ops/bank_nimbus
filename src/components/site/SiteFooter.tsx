@@ -29,7 +29,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground md:flex-row md:items-center">
-          <p>© {new Date().getFullYear()} Nimbus Bank — Simulation. All balances are demo data.</p>
+          <p>© {new Date().getFullYear()} Bangue Herutage Bank — Simulation. All balances are demo data.</p>
           <div className="flex items-center gap-4">
             <span>Terms</span>
             <span>Privacy</span>

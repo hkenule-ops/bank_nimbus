@@ -42,7 +42,7 @@ function Hero() {
             Banking, <span className="text-gradient">reimagined</span> for the modern web.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-            Nimbus is a premium digital banking simulation with a full customer portal, admin console, transfers, cards and reporting — built to look and feel like the world's best fintechs.
+            Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin console, transfers, cards and reporting — built to look and feel like the world's best fintechs.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated hover:opacity-95">
@@ -65,7 +65,7 @@ function Hero() {
         </div>
         <div className="relative">
           <div className="glass-card rounded-3xl p-3">
-            <img src={heroImg} alt="Nimbus digital banking" width={1600} height={1000} className="w-full rounded-2xl" />
+            <img src={heroImg} alt="Bangue Herutage Bank digital banking" width={1600} height={1000} className="w-full rounded-2xl" />
           </div>
           <FloatingCard className="absolute -bottom-6 -left-6 hidden sm:block" />
         </div>
@@ -92,7 +92,7 @@ function FloatingCard({ className = "" }: { className?: string }) {
 function Services() {
   const items = [
     { icon: Wallet, title: "Everyday accounts", body: "Savings, current, joint, student, business, and premium accounts — created instantly." },
-    { icon: Send, title: "Instant transfers", body: "Simulated peer-to-peer transfers between Nimbus customers with real-time updates." },
+    { icon: Send, title: "Instant transfers", body: "Simulated peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates." },
     { icon: CreditCard, title: "Cards on demand", body: "Request debit, virtual, or replacement cards. Freeze, unfreeze and block in one tap." },
     { icon: BarChart3, title: "Insights & reports", body: "Beautiful monthly summaries, revenue charts and export to PDF or CSV." },
     { icon: Globe2, title: "Global by design", body: "Foreign currency accounts and IBAN-style numbering for a realistic experience." },
@@ -214,7 +214,7 @@ function Testimonials() {
 
 function FAQ() {
   const items = [
-    { q: "Is this real banking?", a: "No. Nimbus is an educational and demonstration platform. It does not move real money and is not connected to any bank or card network." },
+    { q: "Is this real banking?", a: "No. Bangue Herutage Bank is an educational and demonstration platform. It does not move real money and is not connected to any bank or card network." },
     { q: "Can I use it as a starting point?", a: "Yes — it's designed as a reference implementation for teams building or prototyping banking experiences." },
     { q: "How do I access the admin portal?", a: "There's a discreet Admin Login link in the footer. Use admin / admin for the demo." },
     { q: "Are my details safe?", a: "Identity fields entered during registration are simulated and masked throughout the UI. No real data should be entered." },
@@ -238,7 +238,7 @@ function About() {
   return (
     <section id="about" className="border-t border-border/60 bg-muted/30">
       <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <SectionHeading eyebrow="About" title="A reference banking experience — for teams that care about craft." subtitle="Nimbus was built to demonstrate what a delightful, security-conscious digital bank can look like on the modern web." />
+        <SectionHeading eyebrow="About" title="A reference banking experience — for teams that care about craft." subtitle="Bangue Herutage Bank was built to demonstrate what a delightful, security-conscious digital bank can look like on the modern web." />
       </div>
     </section>
   );
@@ -248,7 +248,7 @@ function Contact() {
   return (
     <section id="contact" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div className="glass-card rounded-3xl px-8 py-16 text-center">
-        <h2 className="text-3xl font-bold sm:text-4xl">Ready to explore Nimbus?</h2>
+        <h2 className="text-3xl font-bold sm:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">Open a simulated account in seconds and experience the full customer portal end-to-end.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated"><Link to="/register">Get started</Link></Button>

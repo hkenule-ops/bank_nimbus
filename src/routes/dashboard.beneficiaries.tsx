@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Users, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/beneficiaries")({
-  head: () => ({ meta: [{ title: "Beneficiaries — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Beneficiaries — Bangue Herutage Bank" }] }),
   component: BenPage,
 });
 
@@ -16,16 +16,16 @@ interface Ben { id: string; name: string; account: string; bank: string; }
 
 function BenPage() {
   const [list, setList] = useState<Ben[]>([
-    { id: "b1", name: "Jamie Rivera", account: "8823 4471 22", bank: "Nimbus Bank" },
-    { id: "b2", name: "Priya Shah", account: "4409 1230 88", bank: "Nimbus Bank" },
+    { id: "b1", name: "Jamie Rivera", account: "8823 4471 22", bank: "Bangue Herutage Bank" },
+    { id: "b2", name: "Priya Shah", account: "4409 1230 88", bank: "Bangue Herutage Bank" },
   ]);
-  const [f, setF] = useState({ name: "", account: "", bank: "Nimbus Bank" });
+  const [f, setF] = useState({ name: "", account: "", bank: "Bangue Herutage Bank" });
 
   const add = (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.name || !f.account) return toast.error("Fill in the beneficiary details");
     setList((l) => [...l, { id: "b" + Date.now(), ...f }]);
-    setF({ name: "", account: "", bank: "Nimbus Bank" });
+    setF({ name: "", account: "", bank: "Bangue Herutage Bank" });
     toast.success("Beneficiary added");
   };
 

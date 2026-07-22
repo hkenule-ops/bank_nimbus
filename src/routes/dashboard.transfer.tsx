@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Send } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/transfer")({
-  head: () => ({ meta: [{ title: "Transfer — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Transfer — Bangue Herutage Bank" }] }),
   component: TransferPage,
 });
 
@@ -22,12 +22,12 @@ function TransferPage() {
 
   if (!user) return null;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(amount);
     if (!to || !amt || amt <= 0) return toast.error("Enter a valid recipient and amount");
     if (amt > user.balance) return toast.error("Insufficient balance");
-    updateBalance(amt, `Transfer to ${to}${desc ? ` — ${desc}` : ""}`, "Debit");
+    await updateBalance(amt, `Transfer to ${to}${desc ? ` — ${desc}` : ""}`, "Debit");
     toast.success(`Sent ${amt.toLocaleString(undefined, { style: "currency", currency: "USD" })}`);
     setTo(""); setAmount(""); setDesc("");
   };
@@ -36,7 +36,7 @@ function TransferPage() {
     <div className="mx-auto max-w-2xl space-y-6 pb-24 md:pb-8">
       <div>
         <h1 className="text-2xl font-bold">Send money</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Instant simulated transfer to another Nimbus customer.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Instant simulated transfer to another Bangue Herutage customer.</p>
       </div>
       <Card className="p-6">
         <form onSubmit={submit} className="space-y-4">

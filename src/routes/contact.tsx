@@ -10,7 +10,7 @@ import { Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({ meta: [{ title: "Contact — Nimbus Bank" }, { name: "description", content: "Get in touch with the Nimbus Bank team." }] }),
+  head: () => ({ meta: [{ title: "Contact — Bangue Herutage Bank" }, { name: "description", content: "Get in touch with the Bangue Herutage Bank team." }] }),
   component: Contact,
 });
 
@@ -23,7 +23,7 @@ function Contact() {
           <h1 className="text-4xl font-bold sm:text-5xl">Contact us</h1>
           <p className="mt-3 text-lg text-muted-foreground">We'd love to hear from you. Fill in the form or reach us directly.</p>
           <ul className="mt-8 space-y-4 text-sm">
-            <li className="flex items-center gap-3"><Mail className="h-4 w-4 text-primary" /> support@nimbus.bank</li>
+            <li className="flex items-center gap-3"><Mail className="h-4 w-4 text-primary" /> support@bangueherutage.bank</li>
             <li className="flex items-center gap-3"><Phone className="h-4 w-4 text-primary" /> +1 (555) 000-1234</li>
             <li className="flex items-center gap-3"><MapPin className="h-4 w-4 text-primary" /> 500 Market Street, San Francisco, CA</li>
           </ul>

@@ -26,7 +26,7 @@ function AdminHome() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">System-wide statistics for Nimbus Bank.</p>
+        <p className="mt-1 text-sm text-muted-foreground">System-wide statistics for Bangue Herutage Bank.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (

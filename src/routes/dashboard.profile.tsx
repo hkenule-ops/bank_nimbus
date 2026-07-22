@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/profile")({
-  head: () => ({ meta: [{ title: "Profile — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Profile — Bangue Herutage Bank" }] }),
   component: Profile,
 });
 

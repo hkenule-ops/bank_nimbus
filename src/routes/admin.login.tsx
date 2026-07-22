@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/admin/login")({
-  head: () => ({ meta: [{ title: "Admin Login — Nimbus Bank" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Admin Login — Bangue Herutage Bank" }, { name: "robots", content: "noindex" }] }),
   component: AdminLogin,
 });
 
@@ -19,6 +19,7 @@ function AdminLogin() {
   const nav = useNavigate();
   const [u, setU] = useState("");
   const [p, setP] = useState("");
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className="min-h-screen gradient-hero">
@@ -30,10 +31,10 @@ function AdminLogin() {
           </div>
           <h1 className="text-2xl font-semibold">Admin console</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in with your administrator credentials.</p>
-          <form onSubmit={(e) => { e.preventDefault(); if (loginAdmin(u, p)) { toast.success("Admin session started"); nav({ to: "/admin" }); } else toast.error("Invalid credentials"); }} className="mt-6 space-y-4">
+          <form onSubmit={async (e) => { e.preventDefault(); setLoading(true); try { const ok = await loginAdmin(u, p); if (ok) { toast.success("Admin session started"); nav({ to: "/admin" }); } else toast.error("Invalid credentials"); } finally { setLoading(false); } }} className="mt-6 space-y-4">
             <div><Label>Username</Label><Input value={u} onChange={(e) => setU(e.target.value)} className="mt-1.5" /></div>
             <div><Label>Password</Label><Input type="password" value={p} onChange={(e) => setP(e.target.value)} className="mt-1.5" /></div>
-            <Button type="submit" className="w-full gradient-primary text-primary-foreground">Sign in</Button>
+            <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={loading}>{loading ? "Signing in…" : "Sign in"}</Button>
           </form>
           <p className="mt-6 text-center text-xs text-muted-foreground">Demo credentials: admin / admin</p>
         </Card>

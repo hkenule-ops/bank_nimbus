@@ -13,7 +13,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Open an account — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Open an account — Bangue Herutage Bank" }] }),
   component: RegisterPage,
 });
 
@@ -45,11 +45,11 @@ function RegisterPage() {
     return true;
   };
 
-  const next = () => {
+  const next = async () => {
     if (!canNext()) { toast.error("Please complete the required fields"); return; }
     if (step === 4) {
-      register(form);
-      toast.success("Account created — welcome to Nimbus");
+      await register(form);
+      toast.success("Account created — welcome to Bangue Herutage");
       nav({ to: "/dashboard" });
       return;
     }

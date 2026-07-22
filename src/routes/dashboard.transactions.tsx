@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/transactions")({
-  head: () => ({ meta: [{ title: "Transactions — Nimbus Bank" }] }),
+  head: () => ({ meta: [{ title: "Transactions — Bangue Herutage Bank" }] }),
   component: TxPage,
 });
 
