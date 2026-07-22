@@ -17,6 +17,50 @@ export interface Customer {
   status: "Pending Verification" | "Active" | "Suspended";
   registrationDate: string;
   role: Role;
+  // --- KYC / AML compliance fields ---
+  middleName?: string;
+  altPhone?: string;
+  dob?: string;
+  gender?: string;
+  nationality?: string;
+  maritalStatus?: string;
+  occupation?: string;
+  employer?: string;
+  income?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip?: string;
+  residesInSwitzerland?: string;
+  nationalId?: string;
+  ssn?: string;
+  passport?: string;
+  license?: string;
+  tin?: string;
+  taxResidenceCountry?: string;
+  sourceOfFunds?: string;
+  sourceOfFundsOther?: string;
+  purposeOfAccount?: string;
+  expectedActivity?: string;
+  isUsPerson?: string;
+  beneficialOwner?: boolean;
+  selfieConsent?: boolean;
+  kinName?: string;
+  kinRelation?: string;
+  kinPhone?: string;
+  kinEmail?: string;
+  kinAddress?: string;
+  password?: string;
+  securityQuestion?: string;
+  securityAnswer?: string;
+  terms?: boolean;
+  signatureName?: string;
+  eSignConsent?: boolean;
+  passportDocName?: string;
+  addressProofDocName?: string;
+  fundsProofDocName?: string;
+  selfieDocName?: string;
 }
 
 export interface Transaction {
@@ -130,18 +174,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const registerWithFallback = async (data: Partial<Customer>) => {
+    const fallbackCustomer = seedCustomer({ ...data, balance: 0, status: "Active" } as Partial<Customer>);
+
     if (isAppScriptConfigured()) {
-      const response = await appScriptRequest<Customer>("register", { data });
+      const response = await appScriptRequest<Customer>("register", data as Record<string, unknown>);
       if (response.ok && response.data) {
         persist(response.data, false);
         return response.data;
       }
-      return seedCustomer({ ...data, balance: 0, status: "Active" });
+      persist(fallbackCustomer, false);
+      return fallbackCustomer;
     }
 
-    const u = seedCustomer({ ...data, balance: 0, status: "Active" });
-    persist(u, false);
-    return u;
+    persist(fallbackCustomer, false);
+    return fallbackCustomer;
   };
 
   const updateBalanceWithFallback = async (delta: number, description: string, type: "Credit" | "Debit") => {

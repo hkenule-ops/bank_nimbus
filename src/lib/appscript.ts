@@ -19,10 +19,14 @@ export async function appScriptRequest<T>(action: AppScriptAction, payload: Reco
   }
 
   try {
+    const normalizedPayload = Object.prototype.hasOwnProperty.call(payload, "data") && Object.keys(payload).length === 1
+      ? (payload.data as Record<string, unknown> | undefined) ?? {}
+      : payload;
+
     const response = await fetch(APP_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ...payload }),
+      body: JSON.stringify({ action, ...normalizedPayload }),
     });
 
     const text = await response.text();
