@@ -117,6 +117,20 @@ function Services() {
 }
 
 function Features() {
+  const fxRates = [
+    { pair: "CHF / USD", rate: "1.1221", change: "+0.12%", up: true },
+    { pair: "CHF / EUR", rate: "1.0434", change: "-0.05%", up: false },
+    { pair: "CHF / GBP", rate: "0.8926", change: "+0.21%", up: true },
+    { pair: "CHF / JPY", rate: "176.42", change: "-0.08%", up: false },
+  ];
+
+  const stocks = [
+    { ticker: "NESN", name: "Nestlé SA", price: "CHF 94.18", change: "+0.32%", up: true },
+    { ticker: "ROG", name: "Roche Holding", price: "CHF 268.90", change: "+0.55%", up: true },
+    { ticker: "NOVN", name: "Novartis AG", price: "CHF 101.44", change: "-0.18%", up: false },
+    { ticker: "UBSG", name: "UBS Group", price: "CHF 27.55", change: "-0.41%", up: false },
+  ];
+
   return (
     <section className="border-y border-border/60 bg-muted/30">
       <div className="mx-auto grid max-w-7xl gap-12 px-3 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:px-8">
@@ -135,29 +149,45 @@ function Features() {
           <div className="glass-card rounded-3xl p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-muted-foreground">Total balance</div>
-                <div className="text-3xl font-bold">$28,140.22</div>
+                <div className="text-xs text-muted-foreground">SIX Swiss Exchange</div>
+                <div className="text-lg font-semibold">Live Market Overview</div>
               </div>
-              <div className="rounded-full gradient-primary px-3 py-1 text-xs text-primary-foreground">Active</div>
+              <div className="rounded-full gradient-primary px-3 py-1 text-xs text-primary-foreground">Live</div>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-3">
-              {[{ l: "Income", v: "$4,200" }, { l: "Outflow", v: "$1,830" }, { l: "Saved", v: "$2,370" }].map((s) => (
-                <div key={s.l} className="rounded-xl bg-background/60 p-3">
-                  <div className="text-[10px] uppercase text-muted-foreground">{s.l}</div>
-                  <div className="mt-1 text-sm font-semibold">{s.v}</div>
-                </div>
-              ))}
+
+            <div className="mt-6">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Currency exchange · CHF base</div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {fxRates.map((f) => (
+                  <div key={f.pair} className="rounded-xl bg-background/60 p-3">
+                    <div className="text-[10px] uppercase text-muted-foreground">{f.pair}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-sm font-semibold">{f.rate}</span>
+                      <span className={`text-[10px] font-medium ${f.up ? "text-success" : "text-destructive"}`}>
+                        {f.change}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mt-6 space-y-3">
-              {[
-                { d: "Salary — Acme Corp", a: "+$4,200.00", t: "text-success" },
-                { d: "Whole Foods", a: "-$87.32", t: "text-foreground" },
-                { d: "Transfer to Jamie R.", a: "-$250.00", t: "text-foreground" },
-              ].map((r) => (
-                <div key={r.d} className="flex items-center justify-between rounded-xl border border-border/60 bg-background/50 p-3 text-sm">
-                  <span>{r.d}</span><span className={`font-medium ${r.t}`}>{r.a}</span>
-                </div>
-              ))}
+
+            <div className="mt-6">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Swiss equities</div>
+              <div className="mt-3 space-y-3">
+                {stocks.map((s) => (
+                  <div key={s.ticker} className="flex items-center justify-between rounded-xl border border-border/60 bg-background/50 p-3 text-sm">
+                    <div>
+                      <span className="font-medium">{s.ticker}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{s.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{s.price}</div>
+                      <div className={`text-[10px] ${s.up ? "text-success" : "text-destructive"}`}>{s.change}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

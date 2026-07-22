@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,8 +38,12 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen gradient-hero">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-3 py-10 sm:px-4 sm:py-16">
+    <div className="h-screen overflow-hidden gradient-hero">
+      <div className="mx-auto flex h-screen max-w-md flex-col justify-center px-3 py-6 sm:px-4 sm:py-10">
+        <Link to="/" className="mb-6 inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
         <Logo className="mb-8 justify-center" />
         <Card className="glass-card p-5 sm:p-8">
           <h1 className="text-2xl font-semibold">Sign in</h1>
