@@ -27,8 +27,8 @@ export function CustomerShell({ children }: { children?: ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="flex">
+    <div className="min-h-screen overflow-x-hidden bg-muted/30">
+      <div className="flex min-w-0">
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border/60 bg-sidebar p-4 md:block">
           <Logo className="mb-8 px-2" />
           <nav className="space-y-1">
@@ -48,8 +48,8 @@ export function CustomerShell({ children }: { children?: ReactNode }) {
           </div>
         </aside>
 
-        <div className="flex-1">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <div className="flex-1 min-w-0">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-3 backdrop-blur-xl sm:px-6 lg:px-8">
             <div className="md:hidden"><Logo /></div>
             <div className="hidden md:block">
               <div className="text-sm text-muted-foreground">Welcome back,</div>
@@ -63,12 +63,12 @@ export function CustomerShell({ children }: { children?: ReactNode }) {
               </div>
             </div>
           </header>
-          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children ?? <Outlet />}</main>
-          <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-border/60 bg-background/95 py-2 backdrop-blur md:hidden">
+          <main className="mx-auto max-w-6xl px-3 py-8 pb-24 sm:px-6 sm:pb-8 lg:px-8">{children ?? <Outlet />}</main>
+          <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around gap-1 border-t border-border/60 bg-background/95 px-1 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
             {items.slice(0, 5).map((it) => {
               const active = it.exact ? loc.pathname === it.to : loc.pathname.startsWith(it.to);
               return (
-                <Link key={it.to} to={it.to as string} className={cn("flex flex-col items-center gap-0.5 px-2 py-1 text-[10px]", active ? "text-primary" : "text-muted-foreground")}>
+                <Link key={it.to} to={it.to as string} className={cn("flex flex-col items-center gap-0.5 px-1 py-1 text-[9px] leading-none", active ? "text-primary" : "text-muted-foreground")}>
                   <it.icon className="h-5 w-5" /> {it.label}
                 </Link>
               );

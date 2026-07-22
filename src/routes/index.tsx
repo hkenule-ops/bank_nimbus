@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowRight, Shield, Wallet, CreditCard, Send, TrendingUp, Lock, Sparkles, CheckCircle2, Globe2, Smartphone, BarChart3 } from "lucide-react";
-import heroImg from "@/assets/hero.jpg";
+import heroImg from "@/assets/hero.png";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -32,25 +32,25 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 gradient-hero opacity-70" />
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-28 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-3 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:py-28 lg:px-8">
         <div className="flex flex-col justify-center">
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             Demonstration platform · Not real banking
           </span>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
             Banking, <span className="text-gradient">reimagined</span> for the modern web.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin console, transfers, cards and reporting — built to look and feel like the world's best fintechs.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated hover:opacity-95">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button asChild size="lg" className="w-full justify-center gradient-primary text-primary-foreground shadow-elevated hover:opacity-95 sm:w-auto">
               <Link to="/register">Open an account <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
-            <Button asChild size="lg" variant="outline"><Link to="/login">Sign in</Link></Button>
+            <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto"><Link to="/login">Sign in</Link></Button>
           </div>
-          <div className="mt-10 grid max-w-md grid-cols-3 gap-6 text-sm">
+          <div className="mt-10 grid max-w-md grid-cols-1 gap-4 text-sm sm:grid-cols-3 sm:gap-6">
             {[
               { k: "0.00%", v: "Account fees" },
               { k: "24/7", v: "Access" },
@@ -99,7 +99,7 @@ function Services() {
     { icon: Smartphone, title: "Mobile-first", body: "Every screen is crafted to feel great on your phone, tablet and desktop." },
   ];
   return (
-    <section id="services" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <section id="services" className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
       <SectionHeading eyebrow="Services" title="Everything you'd expect from a modern bank" subtitle="A complete set of retail banking features, faithfully simulated end-to-end." />
       <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => (
@@ -119,7 +119,7 @@ function Services() {
 function Features() {
   return (
     <section className="border-y border-border/60 bg-muted/30">
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-12 px-3 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:px-8">
         <div>
           <SectionHeading eyebrow="Features" title="A dashboard people actually enjoy using." subtitle="Clean information hierarchy, purposeful motion, and the metrics that matter — front and center." align="left" />
           <ul className="mt-8 space-y-4">
@@ -168,7 +168,7 @@ function Features() {
 
 function Security() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
       <SectionHeading eyebrow="Security" title="Built with a security-first mindset." subtitle="OTP verification, session controls, masked identity fields, and audit trails — because trust is everything." />
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {[
@@ -220,7 +220,7 @@ function FAQ() {
     { q: "Are my details safe?", a: "Identity fields entered during registration are simulated and masked throughout the UI. No real data should be entered." },
   ];
   return (
-    <section className="mx-auto max-w-4xl px-4 py-24 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-4xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
       <SectionHeading eyebrow="FAQ" title="Answers to common questions." />
       <Accordion type="single" collapsible className="mt-10">
         {items.map((it, i) => (
@@ -246,13 +246,13 @@ function About() {
 
 function Contact() {
   return (
-    <section id="contact" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-      <div className="glass-card rounded-3xl px-8 py-16 text-center">
+    <section id="contact" className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
+      <div className="glass-card rounded-3xl px-4 py-12 text-center sm:px-8 sm:py-16">
         <h2 className="text-3xl font-bold sm:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">Open a simulated account in seconds and experience the full customer portal end-to-end.</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg" className="gradient-primary text-primary-foreground shadow-elevated"><Link to="/register">Get started</Link></Button>
-          <Button asChild size="lg" variant="outline"><Link to="/login">I have an account</Link></Button>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
+          <Button asChild size="lg" className="w-full justify-center gradient-primary text-primary-foreground shadow-elevated sm:w-auto"><Link to="/register">Get started</Link></Button>
+          <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto"><Link to="/login">I have an account</Link></Button>
         </div>
       </div>
     </section>

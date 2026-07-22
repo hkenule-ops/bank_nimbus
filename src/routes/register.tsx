@@ -181,13 +181,13 @@ function RegisterPage() {
 
   return (
     <div className="min-h-screen gradient-hero">
-      <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="mx-auto max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
         <div className="mb-8 flex items-center justify-between">
           <Logo />
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Back to home</Link>
         </div>
 
-        <Card className="glass-card p-8">
+        <Card className="glass-card p-4 sm:p-8">
           <div className="mb-6 flex items-center gap-2">
             {steps.map((s, i) => (
               <div key={s} className="flex flex-1 items-center gap-2">

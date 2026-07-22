@@ -29,8 +29,8 @@ export function AdminShell({ children }: { children?: ReactNode }) {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="flex">
+    <div className="min-h-screen overflow-x-hidden bg-muted/30">
+      <div className="flex min-w-0">
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-sidebar-border bg-sidebar p-4 md:block">
           <div className="mb-2 px-2"><Logo /></div>
           <div className="mb-6 px-2 text-[10px] font-semibold uppercase tracking-wider text-primary">Admin console</div>
@@ -50,13 +50,13 @@ export function AdminShell({ children }: { children?: ReactNode }) {
             </Button>
           </div>
         </aside>
-        <div className="flex-1">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <div className="flex-1 min-w-0">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/60 bg-background/80 px-3 backdrop-blur-xl sm:px-6 lg:px-8">
             <div className="md:hidden"><Logo /></div>
             <div className="hidden md:block text-sm font-semibold">Admin Console</div>
             <div className="grid h-9 w-9 place-items-center rounded-full gradient-primary text-sm font-semibold text-primary-foreground">AD</div>
           </header>
-          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">{children ?? <Outlet />}</main>
+          <main className="mx-auto max-w-6xl px-3 py-8 sm:px-6 lg:px-8">{children ?? <Outlet />}</main>
         </div>
       </div>
     </div>

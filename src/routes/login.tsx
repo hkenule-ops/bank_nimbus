@@ -38,9 +38,9 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen gradient-hero">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-16">
+      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-3 py-10 sm:px-4 sm:py-16">
         <Logo className="mb-8 justify-center" />
-        <Card className="glass-card p-8">
+        <Card className="glass-card p-5 sm:p-8">
           <h1 className="text-2xl font-semibold">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">Access your Bangue Herutage account.</p>
           <form onSubmit={submit} className="mt-6 space-y-4">
