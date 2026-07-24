@@ -306,9 +306,21 @@ const steps = ["Personal", "Identity", "Security", "Verify"] as const;
 const OTP_LENGTH = 4;
 const RESEND_COOLDOWN = 60; // seconds
 
+/** Ambient drifting background blobs, matching the hero/login treatment */
+function AmbientBlobs() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div className="absolute -left-20 top-0 h-72 w-72 animate-float-slow rounded-full bg-[#c9aa54]/20 blur-3xl" />
+      <div className="absolute -right-16 top-1/3 h-80 w-80 animate-float-slower rounded-full bg-primary/20 blur-3xl" />
+      <div className="absolute bottom-0 left-1/4 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/10 blur-3xl" style={{ animationDelay: "2s" }} />
+    </div>
+  );
+}
+
 function RegisterPage() {
   const [step, setStep] = useState(0);
   const [attempted, setAttempted] = useState(false); // whether the user has tried to leave this step at least once
+  const [shake, setShake] = useState(false);
   const [form, setForm] = useState({
     firstName: "", middleName: "", lastName: "", username: "", email: "",
     phoneCountry: "US", phone: "",
@@ -422,11 +434,17 @@ function RegisterPage() {
   const isInvalid = (key: string) => attempted && missingFields().includes(key);
   const canNext = () => missingFields().length === 0;
 
+  const triggerShake = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  };
+
   const next = async () => {
     setAttempted(true);
     const missing = missingFields();
     if (missing.length > 0) {
       toast.error("Please complete all required fields before continuing.");
+      triggerShake();
       return;
     }
     setAttempted(false);
@@ -443,10 +461,12 @@ function RegisterPage() {
               ? `That code is incorrect. In demo mode, use ${DEMO_OTP}.`
               : "That code is incorrect or has expired. Please try again."
           );
+          triggerShake();
           return;
         }
       } catch (err) {
         setOtpError(err instanceof Error ? err.message : "Could not verify code");
+        triggerShake();
         return;
       } finally {
         setOtpVerifying(false);
@@ -473,178 +493,198 @@ function RegisterPage() {
   const isNonResident = form.residesInSwitzerland === "No";
 
   return (
-    <div className="min-h-screen gradient-hero flex items-center justify-center">
-      <div className="mx-auto w-full max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
-        <div className="mb-8 flex items-center justify-between">
-          <Logo />
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Back to home</Link>
+    <div className="relative min-h-screen gradient-hero flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 animate-gradient-shift opacity-50" />
+      <AmbientBlobs />
+
+      <div className="relative mx-auto w-full max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
+        <div className="mb-8 flex items-center justify-between animate-step-in">
+          <Logo className="animate-float" />
+          <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Back to home</Link>
         </div>
 
-        <Card className="glass-card p-4 sm:p-8">
+        <Card className={cn("glass-card p-4 transition-transform duration-300 sm:p-8", shake && "animate-shake")}>
           <div className="mb-6 flex items-center justify-center gap-1.5 sm:gap-2">
             {steps.map((s, i) => (
               <div key={s} className="flex items-center gap-1.5 sm:gap-2">
-                <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-medium ${i < step ? "gradient-primary text-primary-foreground" : i === step ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
-                  {i < step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                <div
+                  className={cn(
+                    "grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-medium transition-colors duration-300",
+                    i < step ? "gradient-primary text-primary-foreground" : i === step ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {i < step ? <CheckCircle2 className="h-4 w-4 animate-pop-check" /> : i + 1}
                 </div>
-                {i < steps.length - 1 && <div className={`h-px w-8 sm:w-14 ${i < step ? "bg-primary" : "bg-border"}`} />}
+                {i < steps.length - 1 && (
+                  <div className="relative h-px w-8 overflow-hidden bg-border sm:w-14">
+                    <div
+                      className="absolute inset-y-0 left-0 bg-primary transition-all duration-500 ease-out"
+                      style={{ width: i < step ? "100%" : "0%" }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
-          <h1 className="text-xl font-semibold">{steps[step]}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {step === 0 && "Tell us a little about yourself."}
-            {step === 1 && "Upload your passport or government ID and a photo of yourself."}
-            {step === 2 && "Set a strong password and choose your account type."}
-            {step === 3 && `Enter the ${OTP_LENGTH}-digit code we emailed to ${form.email || "your email"}.`}
-          </p>
+          <div key={step} className="animate-step-in">
+            <h1 className="text-xl font-semibold">{steps[step]}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {step === 0 && "Tell us a little about yourself."}
+              {step === 1 && "Upload your passport or government ID and a photo of yourself."}
+              {step === 2 && "Set a strong password and choose your account type."}
+              {step === 3 && `Enter the ${OTP_LENGTH}-digit code we emailed to ${form.email || "your email"}.`}
+            </p>
 
-          {attempted && missingFields().length > 0 && (
-            <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Please fill in every required field (marked *) before continuing.</span>
-            </div>
-          )}
+            {attempted && missingFields().length > 0 && (
+              <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive animate-step-in">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>Please fill in every required field (marked *) before continuing.</span>
+              </div>
+            )}
 
-          <div className="mt-6 space-y-4">
-            {step === 0 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="First name" required val={form.firstName} onChange={(v) => set("firstName", v)} invalid={isInvalid("firstName")} />
-                <Field label="Middle name" val={form.middleName} onChange={(v) => set("middleName", v)} />
-                <Field label="Last name" required val={form.lastName} onChange={(v) => set("lastName", v)} invalid={isInvalid("lastName")} />
-                <Field label="Username" required val={form.username} onChange={(v) => set("username", v)} />
-                <Field label="Email" type="email" required val={form.email} onChange={(v) => set("email", v)} invalid={isInvalid("email")} />
-                <PhoneField
-                  label="Mobile phone"
-                  required
-                  countryIso2={form.phoneCountry}
-                  onCountryChange={(v) => set("phoneCountry", v)}
-                  val={form.phone}
-                  onChange={(v) => set("phone", v)}
-                  invalid={isInvalid("phone") || isInvalid("phoneCountry")}
-                />
-                <Field label="Date of birth" type="date" required val={form.dob} onChange={(v) => set("dob", v)} invalid={isInvalid("dob")} />
-                <SelectField label="Gender"  required val={form.gender} onChange={(v) => set("gender", v)} options={["Female", "Male", "Non-binary", "Prefer not to say"]} />
-                <SelectField
-                  label="Nationality"
-                  required
-                  val={form.nationality}
-                  onChange={(v) => set("nationality", v)}
-                  options={COUNTRIES.map((c) => c.name)}
-                  invalid={isInvalid("nationality")}
-                />
-                <Field label="Occupation" required val={form.occupation} onChange={(v) => set("occupation", v)} invalid={isInvalid("occupation")} />
-                <Field label="Employer" required val={form.employer} onChange={(v) => set("employer", v)} />
-                <Field label="Residential address" required val={form.address} onChange={(v) => set("address", v)} invalid={isInvalid("address")} className="sm:col-span-2" />
-                <Field label="City" required val={form.city} onChange={(v) => set("city", v)} invalid={isInvalid("city")} />
-                <SelectField
-                  label="Country of residence"
-                  required
-                  val={form.country}
-                  onChange={setCountry}
-                  options={COUNTRIES.map((c) => c.name)}
-                  invalid={isInvalid("country")}
-                />
-                <SelectField label="Do you currently reside in Switzerland?" required val={form.residesInSwitzerland} onChange={(v) => set("residesInSwitzerland", v)} options={["Yes", "No"]} invalid={isInvalid("residesInSwitzerland")} className="sm:col-span-2" />
-                {isNonResident && (
-                  <div className="sm:col-span-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      As a non-resident applicant, enhanced due diligence applies: expect closer review of your
-                      occupation, wealth, and expected transactions. This application will be reviewed by our
-                      compliance team before final approval.
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-            {step === 1 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FileField
-                  label="Passport / government-issued ID (upload)"
-                  required
-                  file={idDoc}
-                  invalid={isInvalid("docs:idDoc")}
-                  onChange={async (f) => setIdDoc(f ? await readFile(f) : null)}
-                  className="sm:col-span-2"
-                />
-                <FileField
-                  label="Photo of yourself (upload)"
-                  required
-                  file={selfieDoc}
-                  invalid={isInvalid("docs:selfieDoc")}
-                  onChange={async (f) => setSelfieDoc(f ? await readFile(f) : null)}
-                  className="sm:col-span-2"
-                  accept="image/*"
-                />
-              </div>
-            )}
-            {step === 2 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField label="Account type" required val={form.accountType} onChange={(v) => set("accountType", v)} options={ACCOUNT_TYPES} invalid={isInvalid("accountType")} className="sm:col-span-2" />
-                <Field label="Password (min. 8 characters)" type="password" required val={form.password} onChange={(v) => set("password", v)} invalid={isInvalid("password")} />
-                <Field label="Confirm password" type="password" required val={form.confirm} onChange={(v) => set("confirm", v)} invalid={isInvalid("confirm")} />
-                <Field label="Security question" required val={form.securityQuestion} onChange={(v) => set("securityQuestion", v)} invalid={isInvalid("securityQuestion")} className="sm:col-span-2" />
-                <Field label="Security answer" required val={form.securityAnswer} onChange={(v) => set("securityAnswer", v)} invalid={isInvalid("securityAnswer")} className="sm:col-span-2" />
-                <label className="flex items-start gap-2 sm:col-span-2">
-                  <Checkbox checked={form.terms} onCheckedChange={(v) => set("terms", Boolean(v))} className={cn("mt-0.5", isInvalid("terms") && "border-destructive")} />
-                  <span className={cn("text-sm text-muted-foreground", isInvalid("terms") && "text-destructive")}>
-                    I agree to the Terms of Service and Privacy Policy. *
-                  </span>
-                </label>
-              </div>
-            )}
-            {step === 3 && (
-              <div className="flex flex-col items-center py-4">
-                {isDemoMode && (
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Demo code: <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
-                  </p>
-                )}
-                <InputOTP
-                  maxLength={OTP_LENGTH}
-                  value={otp}
-                  onChange={(v) => { setOtp(v); setOtpError(""); }}
-                >
-                  <InputOTPGroup>
-                    {Array.from({ length: OTP_LENGTH }).map((_, i) => (
-                      <InputOTPSlot key={i} index={i} className={cn(otpError && "border-destructive")} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                {isInvalid("otp") && !otpError && (
-                  <p className="mt-2 text-xs text-destructive">Enter all {OTP_LENGTH} digits to continue.</p>
-                )}
-                {otpError && <p className="mt-2 text-xs text-destructive">{otpError}</p>}
-                <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
-                  {otpSending ? (
-                    <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Sending code…</span>
-                  ) : cooldown > 0 ? (
-                    <span>Resend available in {cooldown}s</span>
-                  ) : (
-                    <button type="button" onClick={sendOtp} className="text-primary underline underline-offset-2">
-                      Resend code
-                    </button>
+            <div className="mt-6 space-y-4">
+              {step === 0 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="First name" required val={form.firstName} onChange={(v) => set("firstName", v)} invalid={isInvalid("firstName")} />
+                  <Field label="Middle name" val={form.middleName} onChange={(v) => set("middleName", v)} />
+                  <Field label="Last name" required val={form.lastName} onChange={(v) => set("lastName", v)} invalid={isInvalid("lastName")} />
+                  <Field label="Username" required val={form.username} onChange={(v) => set("username", v)} />
+                  <Field label="Email" type="email" required val={form.email} onChange={(v) => set("email", v)} invalid={isInvalid("email")} />
+                  <PhoneField
+                    label="Mobile phone"
+                    required
+                    countryIso2={form.phoneCountry}
+                    onCountryChange={(v) => set("phoneCountry", v)}
+                    val={form.phone}
+                    onChange={(v) => set("phone", v)}
+                    invalid={isInvalid("phone") || isInvalid("phoneCountry")}
+                  />
+                  <Field label="Date of birth" type="date" required val={form.dob} onChange={(v) => set("dob", v)} invalid={isInvalid("dob")} />
+                  <SelectField label="Gender"  required val={form.gender} onChange={(v) => set("gender", v)} options={["Female", "Male", "Non-binary", "Prefer not to say"]} />
+                  <SelectField
+                    label="Nationality"
+                    required
+                    val={form.nationality}
+                    onChange={(v) => set("nationality", v)}
+                    options={COUNTRIES.map((c) => c.name)}
+                    invalid={isInvalid("nationality")}
+                  />
+                  <Field label="Occupation" required val={form.occupation} onChange={(v) => set("occupation", v)} invalid={isInvalid("occupation")} />
+                  <Field label="Employer" required val={form.employer} onChange={(v) => set("employer", v)} />
+                  <Field label="Residential address" required val={form.address} onChange={(v) => set("address", v)} invalid={isInvalid("address")} className="sm:col-span-2" />
+                  <Field label="City" required val={form.city} onChange={(v) => set("city", v)} invalid={isInvalid("city")} />
+                  <SelectField
+                    label="Country of residence"
+                    required
+                    val={form.country}
+                    onChange={setCountry}
+                    options={COUNTRIES.map((c) => c.name)}
+                    invalid={isInvalid("country")}
+                  />
+                  <SelectField label="Do you currently reside in Switzerland?" required val={form.residesInSwitzerland} onChange={(v) => set("residesInSwitzerland", v)} options={["Yes", "No"]} invalid={isInvalid("residesInSwitzerland")} className="sm:col-span-2" />
+                  {isNonResident && (
+                    <div className="sm:col-span-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400 animate-step-in">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        As a non-resident applicant, enhanced due diligence applies: expect closer review of your
+                        occupation, wealth, and expected transactions. This application will be reviewed by our
+                        compliance team before final approval.
+                      </span>
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+              {step === 1 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FileField
+                    label="Passport / government-issued ID (upload)"
+                    required
+                    file={idDoc}
+                    invalid={isInvalid("docs:idDoc")}
+                    onChange={async (f) => setIdDoc(f ? await readFile(f) : null)}
+                    className="sm:col-span-2"
+                  />
+                  <FileField
+                    label="Photo of yourself (upload)"
+                    required
+                    file={selfieDoc}
+                    invalid={isInvalid("docs:selfieDoc")}
+                    onChange={async (f) => setSelfieDoc(f ? await readFile(f) : null)}
+                    className="sm:col-span-2"
+                    accept="image/*"
+                  />
+                </div>
+              )}
+              {step === 2 && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <SelectField label="Account type" required val={form.accountType} onChange={(v) => set("accountType", v)} options={ACCOUNT_TYPES} invalid={isInvalid("accountType")} className="sm:col-span-2" />
+                  <Field label="Password (min. 8 characters)" type="password" required val={form.password} onChange={(v) => set("password", v)} invalid={isInvalid("password")} />
+                  <Field label="Confirm password" type="password" required val={form.confirm} onChange={(v) => set("confirm", v)} invalid={isInvalid("confirm")} />
+                  <Field label="Security question" required val={form.securityQuestion} onChange={(v) => set("securityQuestion", v)} invalid={isInvalid("securityQuestion")} className="sm:col-span-2" />
+                  <Field label="Security answer" required val={form.securityAnswer} onChange={(v) => set("securityAnswer", v)} invalid={isInvalid("securityAnswer")} className="sm:col-span-2" />
+                  <label className="flex items-start gap-2 sm:col-span-2">
+                    <Checkbox checked={form.terms} onCheckedChange={(v) => set("terms", Boolean(v))} className={cn("mt-0.5", isInvalid("terms") && "border-destructive")} />
+                    <span className={cn("text-sm text-muted-foreground", isInvalid("terms") && "text-destructive")}>
+                      I agree to the Terms of Service and Privacy Policy. *
+                    </span>
+                  </label>
+                </div>
+              )}
+              {step === 3 && (
+                <div className="flex flex-col items-center py-4">
+                  {isDemoMode && (
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      Demo code: <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
+                    </p>
+                  )}
+                  <InputOTP
+                    maxLength={OTP_LENGTH}
+                    value={otp}
+                    onChange={(v) => { setOtp(v); setOtpError(""); }}
+                  >
+                    <InputOTPGroup className={cn(shake && "animate-shake")}>
+                      {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+                        <InputOTPSlot key={i} index={i} className={cn("transition-shadow duration-300", otpError && "border-destructive")} />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                  {isInvalid("otp") && !otpError && (
+                    <p className="mt-2 text-xs text-destructive animate-step-in">Enter all {OTP_LENGTH} digits to continue.</p>
+                  )}
+                  {otpError && <p className="mt-2 text-xs text-destructive animate-step-in">{otpError}</p>}
+                  <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
+                    {otpSending ? (
+                      <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Sending code…</span>
+                    ) : cooldown > 0 ? (
+                      <span>Resend available in {cooldown}s</span>
+                    ) : (
+                      <button type="button" onClick={sendOtp} className="text-primary underline underline-offset-2 transition-opacity hover:opacity-80">
+                        Resend code
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-8 flex items-center justify-between">
-            <Button variant="ghost" onClick={back} disabled={step === 0}>
+            <Button variant="ghost" onClick={back} disabled={step === 0} className="transition-transform duration-200 hover:-translate-x-0.5 disabled:hover:translate-x-0">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             <Button
               onClick={next}
               disabled={(attempted && !canNext()) || otpVerifying}
-              className="gradient-primary text-primary-foreground"
+              className={cn(
+                "shimmer-sweep gradient-primary text-primary-foreground transition-transform duration-200 active:scale-95",
+                !otpVerifying && "hover:scale-[1.03]"
+              )}
             >
               {otpVerifying ? (
                 <>Verifying… <Loader2 className="ml-2 h-4 w-4 animate-spin" /></>
               ) : (
-                <>{step === steps.length - 1 ? "Create account" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" /></>
+                <>{step === steps.length - 1 ? "Create account" : "Continue"} <ArrowRight className="ml-2 h-4 w-4 animate-bounce-x" /></>
               )}
             </Button>
           </div>
@@ -664,9 +704,9 @@ function Field({
         value={val}
         onChange={(e) => onChange(e.target.value)}
         type={type}
-        className={cn("mt-1.5", invalid && "border-destructive focus-visible:ring-destructive")}
+        className={cn("mt-1.5 transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]", invalid && "border-destructive focus-visible:ring-destructive")}
       />
-      {invalid && <p className="mt-1 text-xs text-destructive">This field is required.</p>}
+      {invalid && <p className="mt-1 text-xs text-destructive animate-step-in">This field is required.</p>}
     </div>
   );
 }
@@ -678,10 +718,10 @@ function SelectField({
     <div className={className}>
       <Label className="text-xs">{label}{required && <span className="text-destructive"> *</span>}</Label>
       <Select value={val} onValueChange={onChange}>
-        <SelectTrigger className={cn("mt-1.5", invalid && "border-destructive ring-1 ring-destructive")}><SelectValue placeholder="Select" /></SelectTrigger>
+        <SelectTrigger className={cn("mt-1.5 transition-shadow duration-300", invalid && "border-destructive ring-1 ring-destructive")}><SelectValue placeholder="Select" /></SelectTrigger>
         <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
       </Select>
-      {invalid && <p className="mt-1 text-xs text-destructive">Please make a selection.</p>}
+      {invalid && <p className="mt-1 text-xs text-destructive animate-step-in">Please make a selection.</p>}
     </div>
   );
 }
@@ -700,7 +740,7 @@ function PhoneField({
       <Label className="text-xs">{label}{required && <span className="text-destructive"> *</span>}</Label>
       <div className="mt-1.5 flex gap-2">
         <Select value={countryIso2} onValueChange={onCountryChange}>
-          <SelectTrigger className={cn("w-[110px] shrink-0", invalid && "border-destructive ring-1 ring-destructive")}>
+          <SelectTrigger className={cn("w-[110px] shrink-0 transition-shadow duration-300", invalid && "border-destructive ring-1 ring-destructive")}>
             <SelectValue placeholder="Code">
               {selectedCountry && (
                 <span className="flex items-center gap-1.5">
@@ -728,10 +768,10 @@ function PhoneField({
           type="tel"
           inputMode="tel"
           placeholder="xxx xxx xxx"
-          className={cn("flex-1", invalid && "border-destructive focus-visible:ring-destructive")}
+          className={cn("flex-1 transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]", invalid && "border-destructive focus-visible:ring-destructive")}
         />
       </div>
-      {invalid && <p className="mt-1 text-xs text-destructive">A valid phone number is required.</p>}
+      {invalid && <p className="mt-1 text-xs text-destructive animate-step-in">A valid phone number is required.</p>}
     </div>
   );
 }
@@ -745,15 +785,15 @@ function FileField({
       <Input
         type="file"
         accept={accept}
-        className={cn("mt-1.5", invalid && "border-destructive focus-visible:ring-destructive")}
+        className={cn("mt-1.5 transition-shadow duration-300", invalid && "border-destructive focus-visible:ring-destructive")}
         onChange={(e) => onChange(e.target.files?.[0] ?? null)}
       />
       {file && (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground animate-step-in">
           Attached: {file.name} ({Math.round(file.size / 1024)} KB)
         </p>
       )}
-      {invalid && !file && <p className="mt-1 text-xs text-destructive">This document is required.</p>}
+      {invalid && !file && <p className="mt-1 text-xs text-destructive animate-step-in">This document is required.</p>}
     </div>
   );
 }
