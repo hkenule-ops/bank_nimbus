@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,18 +10,281 @@ import { Logo } from "@/components/site/Logo";
 import { useAuth } from "@/lib/mock-auth";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Converts ISO 2-letter country code (e.g., 'US') to flag emoji (e.g., '🇺🇸')
+function getFlagEmoji(iso2: string): string {
+  if (!iso2 || iso2.length !== 2) return "";
+  return String.fromCodePoint(
+    ...iso2.toUpperCase().split("").map((char) => 127397 + char.charCodeAt(0))
+  );
+}
+
+// Google Apps Script Web App URL - same backend that stores the sheet-based
+// records. It must expose two POST actions:
+//   { action: "sendOtp", email }         -> generates a 4-digit code, stores
+//        it (with an expiry) keyed by email, and emails it via MailApp
+//   { action: "verifyOtp", email, code } -> returns { valid: boolean }
+// If this is left unset, the form runs in DEMO MODE: no network call is made
+// and the fixed DEMO_OTP code below is accepted instead, so the flow can be
+// tested end-to-end before the backend is wired up.
+const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
+const DEMO_OTP = "1234";
+const isDemoMode = !APPS_SCRIPT_URL;
+
+async function requestEmailOtp(email: string) {
+  if (isDemoMode) {
+    // Simulate network latency so the loading state is visible in testing.
+    await new Promise((r) => setTimeout(r, 500));
+    return { ok: true, demo: true };
+  }
+  const res = await fetch(APPS_SCRIPT_URL as string, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "sendOtp", email }),
+  });
+  if (!res.ok) throw new Error("Failed to send verification code");
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error ?? "Failed to send verification code");
+  return data;
+}
+
+async function verifyEmailOtp(email: string, code: string) {
+  if (isDemoMode) {
+    await new Promise((r) => setTimeout(r, 300));
+    return code === DEMO_OTP;
+  }
+  const res = await fetch(APPS_SCRIPT_URL as string, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "verifyOtp", email, code }),
+  });
+  if (!res.ok) throw new Error("Failed to verify code");
+  const data = await res.json();
+  return Boolean(data.valid);
+}
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Open an account — Bangue Herutage Bank" }] }),
   component: RegisterPage,
 });
 
-const ACCOUNT_TYPES = ["Savings Account", "Current (Checking) Account", "Business Account", "Corporate Account", "Joint Account", "Student Account", "Fixed Deposit Account", "Foreign Currency Account", "Salary Account", "Investment Account", "Premium/VIP Account"];
+const ACCOUNT_TYPES = [
+  "Savings Account",
+  "Current (Checking) Account",
+  "Business Account",
+  "Corporate Account",
+  "Joint Account",
+  "Student Account",
+  "Fixed Deposit Account",
+  "Foreign Currency Account",
+  "Salary Account",
+  "Investment Account",
+  "Premium/VIP Account",
+];
 
-const SOURCE_OF_FUNDS = ["Salary / employment income", "Business income", "Investments", "Inheritance", "Sale of property", "Savings", "Other"];
-const ACCOUNT_PURPOSES = ["Everyday savings", "Investments", "Salary / payroll", "International transfers", "Business operations", "Other"];
+// Country name + ISO2 + international dial code. Full ISO-3166 set
+// (197 countries) with their ITU calling codes.
+const COUNTRIES: { name: string; iso2: string; dial: string }[] = [
+  { name: "Afghanistan", iso2: "AF", dial: "+93" },
+  { name: "Albania", iso2: "AL", dial: "+355" },
+  { name: "Algeria", iso2: "DZ", dial: "+213" },
+  { name: "Andorra", iso2: "AD", dial: "+376" },
+  { name: "Angola", iso2: "AO", dial: "+244" },
+  { name: "Antigua and Barbuda", iso2: "AG", dial: "+1" },
+  { name: "Argentina", iso2: "AR", dial: "+54" },
+  { name: "Armenia", iso2: "AM", dial: "+374" },
+  { name: "Australia", iso2: "AU", dial: "+61" },
+  { name: "Austria", iso2: "AT", dial: "+43" },
+  { name: "Azerbaijan", iso2: "AZ", dial: "+994" },
+  { name: "Bahamas", iso2: "BS", dial: "+1" },
+  { name: "Bahrain", iso2: "BH", dial: "+973" },
+  { name: "Bangladesh", iso2: "BD", dial: "+880" },
+  { name: "Barbados", iso2: "BB", dial: "+1" },
+  { name: "Belarus", iso2: "BY", dial: "+375" },
+  { name: "Belgium", iso2: "BE", dial: "+32" },
+  { name: "Belize", iso2: "BZ", dial: "+501" },
+  { name: "Benin", iso2: "BJ", dial: "+229" },
+  { name: "Bhutan", iso2: "BT", dial: "+975" },
+  { name: "Bolivia", iso2: "BO", dial: "+591" },
+  { name: "Bosnia and Herzegovina", iso2: "BA", dial: "+387" },
+  { name: "Botswana", iso2: "BW", dial: "+267" },
+  { name: "Brazil", iso2: "BR", dial: "+55" },
+  { name: "Brunei", iso2: "BN", dial: "+673" },
+  { name: "Bulgaria", iso2: "BG", dial: "+359" },
+  { name: "Burkina Faso", iso2: "BF", dial: "+226" },
+  { name: "Burundi", iso2: "BI", dial: "+257" },
+  { name: "Cabo Verde", iso2: "CV", dial: "+238" },
+  { name: "Cambodia", iso2: "KH", dial: "+855" },
+  { name: "Cameroon", iso2: "CM", dial: "+237" },
+  { name: "Canada", iso2: "CA", dial: "+1" },
+  { name: "Central African Republic", iso2: "CF", dial: "+236" },
+  { name: "Chad", iso2: "TD", dial: "+235" },
+  { name: "Chile", iso2: "CL", dial: "+56" },
+  { name: "China", iso2: "CN", dial: "+86" },
+  { name: "Colombia", iso2: "CO", dial: "+57" },
+  { name: "Comoros", iso2: "KM", dial: "+269" },
+  { name: "Congo (Republic)", iso2: "CG", dial: "+242" },
+  { name: "Congo (DRC)", iso2: "CD", dial: "+243" },
+  { name: "Costa Rica", iso2: "CR", dial: "+506" },
+  { name: "Croatia", iso2: "HR", dial: "+385" },
+  { name: "Cuba", iso2: "CU", dial: "+53" },
+  { name: "Cyprus", iso2: "CY", dial: "+357" },
+  { name: "Czech Republic", iso2: "CZ", dial: "+420" },
+  { name: "Denmark", iso2: "DK", dial: "+45" },
+  { name: "Djibouti", iso2: "DJ", dial: "+253" },
+  { name: "Dominica", iso2: "DM", dial: "+1" },
+  { name: "Dominican Republic", iso2: "DO", dial: "+1" },
+  { name: "Ecuador", iso2: "EC", dial: "+593" },
+  { name: "Egypt", iso2: "EG", dial: "+20" },
+  { name: "El Salvador", iso2: "SV", dial: "+503" },
+  { name: "Equatorial Guinea", iso2: "GQ", dial: "+240" },
+  { name: "Eritrea", iso2: "ER", dial: "+291" },
+  { name: "Estonia", iso2: "EE", dial: "+372" },
+  { name: "Eswatini", iso2: "SZ", dial: "+268" },
+  { name: "Ethiopia", iso2: "ET", dial: "+251" },
+  { name: "Fiji", iso2: "FJ", dial: "+679" },
+  { name: "Finland", iso2: "FI", dial: "+358" },
+  { name: "France", iso2: "FR", dial: "+33" },
+  { name: "Gabon", iso2: "GA", dial: "+241" },
+  { name: "Gambia", iso2: "GM", dial: "+220" },
+  { name: "Georgia", iso2: "GE", dial: "+995" },
+  { name: "Germany", iso2: "DE", dial: "+49" },
+  { name: "Ghana", iso2: "GH", dial: "+233" },
+  { name: "Greece", iso2: "GR", dial: "+30" },
+  { name: "Grenada", iso2: "GD", dial: "+1" },
+  { name: "Guatemala", iso2: "GT", dial: "+502" },
+  { name: "Guinea", iso2: "GN", dial: "+224" },
+  { name: "Guinea-Bissau", iso2: "GW", dial: "+245" },
+  { name: "Guyana", iso2: "GY", dial: "+592" },
+  { name: "Haiti", iso2: "HT", dial: "+509" },
+  { name: "Honduras", iso2: "HN", dial: "+504" },
+  { name: "Hungary", iso2: "HU", dial: "+36" },
+  { name: "Iceland", iso2: "IS", dial: "+354" },
+  { name: "India", iso2: "IN", dial: "+91" },
+  { name: "Indonesia", iso2: "ID", dial: "+62" },
+  { name: "Iran", iso2: "IR", dial: "+98" },
+  { name: "Iraq", iso2: "IQ", dial: "+964" },
+  { name: "Ireland", iso2: "IE", dial: "+353" },
+  { name: "Israel", iso2: "IL", dial: "+972" },
+  { name: "Italy", iso2: "IT", dial: "+39" },
+  { name: "Ivory Coast", iso2: "CI", dial: "+225" },
+  { name: "Jamaica", iso2: "JM", dial: "+1" },
+  { name: "Japan", iso2: "JP", dial: "+81" },
+  { name: "Jordan", iso2: "JO", dial: "+962" },
+  { name: "Kazakhstan", iso2: "KZ", dial: "+7" },
+  { name: "Kenya", iso2: "KE", dial: "+254" },
+  { name: "Kiribati", iso2: "KI", dial: "+686" },
+  { name: "Kosovo", iso2: "XK", dial: "+383" },
+  { name: "Kuwait", iso2: "KW", dial: "+965" },
+  { name: "Kyrgyzstan", iso2: "KG", dial: "+996" },
+  { name: "Laos", iso2: "LA", dial: "+856" },
+  { name: "Latvia", iso2: "LV", dial: "+371" },
+  { name: "Lebanon", iso2: "LB", dial: "+961" },
+  { name: "Lesotho", iso2: "LS", dial: "+266" },
+  { name: "Liberia", iso2: "LR", dial: "+231" },
+  { name: "Libya", iso2: "LY", dial: "+218" },
+  { name: "Liechtenstein", iso2: "LI", dial: "+423" },
+  { name: "Lithuania", iso2: "LT", dial: "+370" },
+  { name: "Luxembourg", iso2: "LU", dial: "+352" },
+  { name: "Madagascar", iso2: "MG", dial: "+261" },
+  { name: "Malawi", iso2: "MW", dial: "+265" },
+  { name: "Malaysia", iso2: "MY", dial: "+60" },
+  { name: "Maldives", iso2: "MV", dial: "+960" },
+  { name: "Mali", iso2: "ML", dial: "+223" },
+  { name: "Malta", iso2: "MT", dial: "+356" },
+  { name: "Marshall Islands", iso2: "MH", dial: "+692" },
+  { name: "Mauritania", iso2: "MR", dial: "+222" },
+  { name: "Mauritius", iso2: "MU", dial: "+230" },
+  { name: "Mexico", iso2: "MX", dial: "+52" },
+  { name: "Micronesia", iso2: "FM", dial: "+691" },
+  { name: "Moldova", iso2: "MD", dial: "+373" },
+  { name: "Monaco", iso2: "MC", dial: "+377" },
+  { name: "Mongolia", iso2: "MN", dial: "+976" },
+  { name: "Montenegro", iso2: "ME", dial: "+382" },
+  { name: "Morocco", iso2: "MA", dial: "+212" },
+  { name: "Mozambique", iso2: "MZ", dial: "+258" },
+  { name: "Myanmar", iso2: "MM", dial: "+95" },
+  { name: "Namibia", iso2: "NA", dial: "+264" },
+  { name: "Nauru", iso2: "NR", dial: "+674" },
+  { name: "Nepal", iso2: "NP", dial: "+977" },
+  { name: "Netherlands", iso2: "NL", dial: "+31" },
+  { name: "New Zealand", iso2: "NZ", dial: "+64" },
+  { name: "Nicaragua", iso2: "NI", dial: "+505" },
+  { name: "Niger", iso2: "NE", dial: "+227" },
+  { name: "Nigeria", iso2: "NG", dial: "+234" },
+  { name: "North Korea", iso2: "KP", dial: "+850" },
+  { name: "North Macedonia", iso2: "MK", dial: "+389" },
+  { name: "Norway", iso2: "NO", dial: "+47" },
+  { name: "Oman", iso2: "OM", dial: "+968" },
+  { name: "Pakistan", iso2: "PK", dial: "+92" },
+  { name: "Palau", iso2: "PW", dial: "+680" },
+  { name: "Palestine", iso2: "PS", dial: "+970" },
+  { name: "Panama", iso2: "PA", dial: "+507" },
+  { name: "Papua New Guinea", iso2: "PG", dial: "+675" },
+  { name: "Paraguay", iso2: "PY", dial: "+595" },
+  { name: "Peru", iso2: "PE", dial: "+51" },
+  { name: "Philippines", iso2: "PH", dial: "+63" },
+  { name: "Poland", iso2: "PL", dial: "+48" },
+  { name: "Portugal", iso2: "PT", dial: "+351" },
+  { name: "Qatar", iso2: "QA", dial: "+974" },
+  { name: "Romania", iso2: "RO", dial: "+40" },
+  { name: "Russia", iso2: "RU", dial: "+7" },
+  { name: "Rwanda", iso2: "RW", dial: "+250" },
+  { name: "Saint Kitts and Nevis", iso2: "KN", dial: "+1" },
+  { name: "Saint Lucia", iso2: "LC", dial: "+1" },
+  { name: "Saint Vincent and the Grenadines", iso2: "VC", dial: "+1" },
+  { name: "Samoa", iso2: "WS", dial: "+685" },
+  { name: "San Marino", iso2: "SM", dial: "+378" },
+  { name: "Sao Tome and Principe", iso2: "ST", dial: "+239" },
+  { name: "Saudi Arabia", iso2: "SA", dial: "+966" },
+  { name: "Senegal", iso2: "SN", dial: "+221" },
+  { name: "Serbia", iso2: "RS", dial: "+381" },
+  { name: "Seychelles", iso2: "SC", dial: "+248" },
+  { name: "Sierra Leone", iso2: "SL", dial: "+232" },
+  { name: "Singapore", iso2: "SG", dial: "+65" },
+  { name: "Slovakia", iso2: "SK", dial: "+421" },
+  { name: "Slovenia", iso2: "SI", dial: "+386" },
+  { name: "Solomon Islands", iso2: "SB", dial: "+677" },
+  { name: "Somalia", iso2: "SO", dial: "+252" },
+  { name: "South Africa", iso2: "ZA", dial: "+27" },
+  { name: "South Korea", iso2: "KR", dial: "+82" },
+  { name: "South Sudan", iso2: "SS", dial: "+211" },
+  { name: "Spain", iso2: "ES", dial: "+34" },
+  { name: "Sri Lanka", iso2: "LK", dial: "+94" },
+  { name: "Sudan", iso2: "SD", dial: "+249" },
+  { name: "Suriname", iso2: "SR", dial: "+597" },
+  { name: "Sweden", iso2: "SE", dial: "+46" },
+  { name: "Switzerland", iso2: "CH", dial: "+41" },
+  { name: "Syria", iso2: "SY", dial: "+963" },
+  { name: "Taiwan", iso2: "TW", dial: "+886" },
+  { name: "Tajikistan", iso2: "TJ", dial: "+992" },
+  { name: "Tanzania", iso2: "TZ", dial: "+255" },
+  { name: "Thailand", iso2: "TH", dial: "+66" },
+  { name: "Timor-Leste", iso2: "TL", dial: "+670" },
+  { name: "Togo", iso2: "TG", dial: "+228" },
+  { name: "Tonga", iso2: "TO", dial: "+676" },
+  { name: "Trinidad and Tobago", iso2: "TT", dial: "+1" },
+  { name: "Tunisia", iso2: "TN", dial: "+216" },
+  { name: "Turkey", iso2: "TR", dial: "+90" },
+  { name: "Turkmenistan", iso2: "TM", dial: "+993" },
+  { name: "Tuvalu", iso2: "TV", dial: "+688" },
+  { name: "Uganda", iso2: "UG", dial: "+256" },
+  { name: "Ukraine", iso2: "UA", dial: "+380" },
+  { name: "United Arab Emirates", iso2: "AE", dial: "+971" },
+  { name: "United Kingdom", iso2: "GB", dial: "+44" },
+  { name: "United States", iso2: "US", dial: "+1" },
+  { name: "Uruguay", iso2: "UY", dial: "+598" },
+  { name: "Uzbekistan", iso2: "UZ", dial: "+998" },
+  { name: "Vanuatu", iso2: "VU", dial: "+678" },
+  { name: "Vatican City", iso2: "VA", dial: "+379" },
+  { name: "Venezuela", iso2: "VE", dial: "+58" },
+  { name: "Vietnam", iso2: "VN", dial: "+84" },
+  { name: "Yemen", iso2: "YE", dial: "+967" },
+  { name: "Zambia", iso2: "ZM", dial: "+260" },
+  { name: "Zimbabwe", iso2: "ZW", dial: "+263" },
+];
 
 export interface KycFile {
   name: string;
@@ -39,55 +302,87 @@ function readFile(file: File): Promise<KycFile> {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const steps = [
-  "Personal",
-  "Identity",
-  "Compliance",
-  "Verify identity",
-  "Next of kin",
-  "Security",
-  "E-signature",
-  "Confirm",
-] as const;
+const steps = ["Personal", "Identity", "Security", "Verify"] as const;
+const OTP_LENGTH = 4;
+const RESEND_COOLDOWN = 60; // seconds
 
 function RegisterPage() {
   const [step, setStep] = useState(0);
   const [attempted, setAttempted] = useState(false); // whether the user has tried to leave this step at least once
   const [form, setForm] = useState({
-    firstName: "", middleName: "", lastName: "", username: "", email: "", phone: "", altPhone: "",
-    dob: "", gender: "", nationality: "", maritalStatus: "", occupation: "", employer: "", income: "",
-    address: "", city: "", state: "", country: "", zip: "",
+    firstName: "", middleName: "", lastName: "", username: "", email: "",
+    phoneCountry: "US", phone: "",
+    dob: "", gender: "", nationality: "", occupation: "", employer: "",
+    address: "", city: "", country: "",
     residesInSwitzerland: "",
-    nationalId: "", ssn: "", passport: "", license: "", tin: "",
-    // --- KYC / AML compliance fields ---
-    taxResidenceCountry: "",
-    sourceOfFunds: "",
-    sourceOfFundsOther: "",
-    purposeOfAccount: "",
-    expectedActivity: "",
-    isUsPerson: "",
-    beneficialOwner: false,
-    selfieConsent: false,
-    kinName: "", kinRelation: "", kinPhone: "", kinEmail: "", kinAddress: "",
     password: "", confirm: "", securityQuestion: "", securityAnswer: "", terms: false,
     accountType: "Savings Account",
-    signatureName: "", eSignConsent: false,
   });
 
   // KYC supporting documents (metadata only in this demo — see readFile above)
-  const [passportDoc, setPassportDoc] = useState<KycFile | null>(null);
-  const [addressProofDoc, setAddressProofDoc] = useState<KycFile | null>(null);
-  const [fundsProofDoc, setFundsProofDoc] = useState<KycFile | null>(null);
+  const [idDoc, setIdDoc] = useState<KycFile | null>(null);
   const [selfieDoc, setSelfieDoc] = useState<KycFile | null>(null);
 
+  // Email OTP verification
   const [otp, setOtp] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  const otpSentForEmail = useRef<string | null>(null);
+
   const { register } = useAuth();
   const nav = useNavigate();
 
+  const sendOtp = async () => {
+    setOtpSending(true);
+    setOtpError("");
+    try {
+      await requestEmailOtp(form.email);
+      otpSentForEmail.current = form.email;
+      setCooldown(RESEND_COOLDOWN);
+      toast.success(
+        isDemoMode
+          ? `Demo mode — use code ${DEMO_OTP} to continue`
+          : `Verification code sent to ${form.email}`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send verification code");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  // Send the OTP automatically the first time the Verify step is reached.
+  useEffect(() => {
+    if (step === 3 && otpSentForEmail.current !== form.email) {
+      void sendOtp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
   const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
+  const phoneDialCode = COUNTRIES.find((c) => c.iso2 === form.phoneCountry)?.dial ?? "+1";
+
+  // When the residence country changes, default the phone country to match
+  // (the user can still pick a different phone country manually afterwards).
+  const setCountry = (name: string) => {
+    setForm((f) => {
+      const match = COUNTRIES.find((c) => c.name === name);
+      return { ...f, country: name, phoneCountry: match ? match.iso2 : f.phoneCountry };
+    });
+  };
+
   // Returns the list of missing/invalid field keys for the current step.
-  // A field key of "docs:passportDoc" etc. refers to the separate file state.
+  // A field key of "docs:idDoc" etc. refers to the separate file state.
   const missingFields = (): string[] => {
     const missing: string[] = [];
     const need = (cond: unknown, key: string) => { if (!cond) missing.push(key); };
@@ -96,6 +391,7 @@ function RegisterPage() {
       need(form.firstName.trim(), "firstName");
       need(form.lastName.trim(), "lastName");
       need(form.email.trim() && EMAIL_RE.test(form.email), "email");
+      need(form.phoneCountry, "phoneCountry");
       need(form.phone.trim(), "phone");
       need(form.dob, "dob");
       need(form.nationality.trim(), "nationality");
@@ -106,27 +402,10 @@ function RegisterPage() {
       need(form.residesInSwitzerland, "residesInSwitzerland");
     }
     if (step === 1) {
-      need(form.nationalId.trim(), "nationalId");
-      need(form.passport.trim(), "passport");
+      need(idDoc, "docs:idDoc");
+      need(selfieDoc, "docs:selfieDoc");
     }
     if (step === 2) {
-      need(passportDoc, "docs:passportDoc");
-      need(addressProofDoc, "docs:addressProofDoc");
-      need(form.tin.trim(), "tin");
-      need(form.taxResidenceCountry.trim(), "taxResidenceCountry");
-      need(form.sourceOfFunds, "sourceOfFunds");
-      if (form.sourceOfFunds === "Other") need(form.sourceOfFundsOther.trim(), "sourceOfFundsOther");
-      need(form.purposeOfAccount, "purposeOfAccount");
-      need(form.expectedActivity.trim(), "expectedActivity");
-      need(form.isUsPerson, "isUsPerson");
-      need(form.beneficialOwner, "beneficialOwner");
-    }
-    if (step === 3) {
-      need(selfieDoc, "docs:selfieDoc");
-      need(form.selfieConsent, "selfieConsent");
-    }
-    // step 4 (Next of kin) has no hard requirement
-    if (step === 5) {
       need(form.accountType, "accountType");
       need(form.password && form.password.length >= 8, "password");
       need(form.password && form.password === form.confirm, "confirm");
@@ -134,13 +413,8 @@ function RegisterPage() {
       need(form.securityAnswer.trim(), "securityAnswer");
       need(form.terms, "terms");
     }
-    if (step === 6) {
-      const fullName = `${form.firstName} ${form.lastName}`.trim().toLowerCase();
-      need(form.signatureName.trim() && form.signatureName.trim().toLowerCase() === fullName, "signatureName");
-      need(form.eSignConsent, "eSignConsent");
-    }
-    if (step === 7) {
-      need(otp.length === 6, "otp");
+    if (step === 3) {
+      need(otp.length === OTP_LENGTH, "otp");
     }
     return missing;
   };
@@ -156,12 +430,32 @@ function RegisterPage() {
       return;
     }
     setAttempted(false);
+
     if (step === steps.length - 1) {
+      // Final step: confirm the emailed code with the backend, then create the account.
+      setOtpVerifying(true);
+      setOtpError("");
+      try {
+        const valid = await verifyEmailOtp(form.email, otp);
+        if (!valid) {
+          setOtpError(
+            isDemoMode
+              ? `That code is incorrect. In demo mode, use ${DEMO_OTP}.`
+              : "That code is incorrect or has expired. Please try again."
+          );
+          return;
+        }
+      } catch (err) {
+        setOtpError(err instanceof Error ? err.message : "Could not verify code");
+        return;
+      } finally {
+        setOtpVerifying(false);
+      }
+
       await register({
         ...form,
-        passportDocName: passportDoc?.name ?? "",
-        addressProofDocName: addressProofDoc?.name ?? "",
-        fundsProofDocName: fundsProofDoc?.name ?? "",
+        phone: `${phoneDialCode}${form.phone}`,
+        idDocName: idDoc?.name ?? "",
         selfieDocName: selfieDoc?.name ?? "",
       } as never);
       toast.success("Account created — welcome to Bangue Herutage");
@@ -177,24 +471,23 @@ function RegisterPage() {
   };
 
   const isNonResident = form.residesInSwitzerland === "No";
-  const fullLegalName = `${form.firstName} ${form.lastName}`.trim();
 
   return (
-    <div className="min-h-screen gradient-hero">
-      <div className="mx-auto max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
+    <div className="min-h-screen gradient-hero flex items-center justify-center">
+      <div className="mx-auto w-full max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
         <div className="mb-8 flex items-center justify-between">
           <Logo />
           <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Back to home</Link>
         </div>
 
         <Card className="glass-card p-4 sm:p-8">
-          <div className="mb-6 flex items-center gap-2">
+          <div className="mb-6 flex items-center justify-center gap-1.5 sm:gap-2">
             {steps.map((s, i) => (
-              <div key={s} className="flex flex-1 items-center gap-2">
+              <div key={s} className="flex items-center gap-1.5 sm:gap-2">
                 <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-medium ${i < step ? "gradient-primary text-primary-foreground" : i === step ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                   {i < step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </div>
-                {i < steps.length - 1 && <div className={`h-px flex-1 ${i < step ? "bg-primary" : "bg-border"}`} />}
+                {i < steps.length - 1 && <div className={`h-px w-8 sm:w-14 ${i < step ? "bg-primary" : "bg-border"}`} />}
               </div>
             ))}
           </div>
@@ -202,13 +495,9 @@ function RegisterPage() {
           <h1 className="text-xl font-semibold">{steps[step]}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {step === 0 && "Tell us a little about yourself."}
-            {step === 1 && "Identity details are simulated and masked in the app."}
-            {step === 2 && "Required for AML / KYC compliance before your account can be verified."}
-            {step === 3 && "Online applications require a live identity check."}
-            {step === 4 && "Who should we contact in an emergency? (optional)"}
-            {step === 5 && "Set a strong password and choose your account type."}
-            {step === 6 && "Sign the account opening documents electronically."}
-            {step === 7 && "Enter the 6-digit code we emailed you."}
+            {step === 1 && "Upload your passport or government ID and a photo of yourself."}
+            {step === 2 && "Set a strong password and choose your account type."}
+            {step === 3 && `Enter the ${OTP_LENGTH}-digit code we emailed to ${form.email || "your email"}.`}
           </p>
 
           {attempted && missingFields().length > 0 && (
@@ -224,26 +513,47 @@ function RegisterPage() {
                 <Field label="First name" required val={form.firstName} onChange={(v) => set("firstName", v)} invalid={isInvalid("firstName")} />
                 <Field label="Middle name" val={form.middleName} onChange={(v) => set("middleName", v)} />
                 <Field label="Last name" required val={form.lastName} onChange={(v) => set("lastName", v)} invalid={isInvalid("lastName")} />
-                <Field label="Username" val={form.username} onChange={(v) => set("username", v)} />
+                <Field label="Username" required val={form.username} onChange={(v) => set("username", v)} />
                 <Field label="Email" type="email" required val={form.email} onChange={(v) => set("email", v)} invalid={isInvalid("email")} />
-                <Field label="Mobile phone" required val={form.phone} onChange={(v) => set("phone", v)} invalid={isInvalid("phone")} />
+                <PhoneField
+                  label="Mobile phone"
+                  required
+                  countryIso2={form.phoneCountry}
+                  onCountryChange={(v) => set("phoneCountry", v)}
+                  val={form.phone}
+                  onChange={(v) => set("phone", v)}
+                  invalid={isInvalid("phone") || isInvalid("phoneCountry")}
+                />
                 <Field label="Date of birth" type="date" required val={form.dob} onChange={(v) => set("dob", v)} invalid={isInvalid("dob")} />
-                <SelectField label="Gender" val={form.gender} onChange={(v) => set("gender", v)} options={["Female", "Male", "Non-binary", "Prefer not to say"]} />
-                <Field label="Nationality" required val={form.nationality} onChange={(v) => set("nationality", v)} invalid={isInvalid("nationality")} />
+                <SelectField label="Gender"  required val={form.gender} onChange={(v) => set("gender", v)} options={["Female", "Male", "Non-binary", "Prefer not to say"]} />
+                <SelectField
+                  label="Nationality"
+                  required
+                  val={form.nationality}
+                  onChange={(v) => set("nationality", v)}
+                  options={COUNTRIES.map((c) => c.name)}
+                  invalid={isInvalid("nationality")}
+                />
                 <Field label="Occupation" required val={form.occupation} onChange={(v) => set("occupation", v)} invalid={isInvalid("occupation")} />
-                <Field label="Employer" val={form.employer} onChange={(v) => set("employer", v)} />
+                <Field label="Employer" required val={form.employer} onChange={(v) => set("employer", v)} />
                 <Field label="Residential address" required val={form.address} onChange={(v) => set("address", v)} invalid={isInvalid("address")} className="sm:col-span-2" />
                 <Field label="City" required val={form.city} onChange={(v) => set("city", v)} invalid={isInvalid("city")} />
-                <Field label="Country of residence" required val={form.country} onChange={(v) => set("country", v)} invalid={isInvalid("country")} />
+                <SelectField
+                  label="Country of residence"
+                  required
+                  val={form.country}
+                  onChange={setCountry}
+                  options={COUNTRIES.map((c) => c.name)}
+                  invalid={isInvalid("country")}
+                />
                 <SelectField label="Do you currently reside in Switzerland?" required val={form.residesInSwitzerland} onChange={(v) => set("residesInSwitzerland", v)} options={["Yes", "No"]} invalid={isInvalid("residesInSwitzerland")} className="sm:col-span-2" />
                 {isNonResident && (
                   <div className="sm:col-span-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
                       As a non-resident applicant, enhanced due diligence applies: expect closer review of your
-                      occupation, wealth, and expected transactions, plus supporting documents for your income and
-                      assets. Some banks also require in-branch verification for non-residents — this application
-                      will be reviewed by our compliance team before final approval.
+                      occupation, wealth, and expected transactions. This application will be reviewed by our
+                      compliance team before final approval.
                     </span>
                   </div>
                 )}
@@ -251,62 +561,16 @@ function RegisterPage() {
             )}
             {step === 1 && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="National ID / government ID number" required val={form.nationalId} onChange={(v) => set("nationalId", v)} invalid={isInvalid("nationalId")} />
-                <Field label="SSN (if applicable)" val={form.ssn} onChange={(v) => set("ssn", v)} />
-                <Field label="Passport number" required val={form.passport} onChange={(v) => set("passport", v)} invalid={isInvalid("passport")} />
-                <Field label="Driver's license (optional)" val={form.license} onChange={(v) => set("license", v)} />
-              </div>
-            )}
-            {step === 2 && (
-              <div className="grid gap-4 sm:grid-cols-2">
                 <FileField
-                  label="Passport / government photo ID (upload)"
+                  label="Passport / government-issued ID (upload)"
                   required
-                  file={passportDoc}
-                  invalid={isInvalid("docs:passportDoc")}
-                  onChange={async (f) => setPassportDoc(f ? await readFile(f) : null)}
+                  file={idDoc}
+                  invalid={isInvalid("docs:idDoc")}
+                  onChange={async (f) => setIdDoc(f ? await readFile(f) : null)}
                   className="sm:col-span-2"
                 />
                 <FileField
-                  label="Proof of address — utility bill or bank statement, less than 3 months old (upload)"
-                  required
-                  file={addressProofDoc}
-                  invalid={isInvalid("docs:addressProofDoc")}
-                  onChange={async (f) => setAddressProofDoc(f ? await readFile(f) : null)}
-                  className="sm:col-span-2"
-                />
-                <Field label="Tax Identification Number (TIN)" required val={form.tin} onChange={(v) => set("tin", v)} invalid={isInvalid("tin")} />
-                <Field label="Country of tax residence" required val={form.taxResidenceCountry} onChange={(v) => set("taxResidenceCountry", v)} invalid={isInvalid("taxResidenceCountry")} />
-                <SelectField label="Source of funds" required val={form.sourceOfFunds} onChange={(v) => set("sourceOfFunds", v)} options={SOURCE_OF_FUNDS} invalid={isInvalid("sourceOfFunds")} />
-                {form.sourceOfFunds === "Other" && (
-                  <Field label="Describe source of funds" required val={form.sourceOfFundsOther} onChange={(v) => set("sourceOfFundsOther", v)} invalid={isInvalid("sourceOfFundsOther")} />
-                )}
-                <SelectField label="Purpose of this account" required val={form.purposeOfAccount} onChange={(v) => set("purposeOfAccount", v)} options={ACCOUNT_PURPOSES} invalid={isInvalid("purposeOfAccount")} />
-                <Field label="Expected monthly activity (e.g. deposits/withdrawals, approx. amount)" required val={form.expectedActivity} onChange={(v) => set("expectedActivity", v)} invalid={isInvalid("expectedActivity")} className="sm:col-span-2" />
-                <FileField
-                  label="Proof of source of funds — payslip, employment letter, tax return, or sale agreement (upload, if available)"
-                  file={fundsProofDoc}
-                  onChange={async (f) => setFundsProofDoc(f ? await readFile(f) : null)}
-                  className="sm:col-span-2"
-                />
-                <SelectField label="Are you a U.S. person for tax purposes? (FATCA)" required val={form.isUsPerson} onChange={(v) => set("isUsPerson", v)} options={["Yes", "No"]} invalid={isInvalid("isUsPerson")} />
-                <label className="flex items-start gap-2 sm:col-span-2">
-                  <Checkbox checked={form.beneficialOwner} onCheckedChange={(v) => set("beneficialOwner", Boolean(v))} className={cn("mt-0.5", isInvalid("beneficialOwner") && "border-destructive")} />
-                  <span className={cn("text-sm text-muted-foreground", isInvalid("beneficialOwner") && "text-destructive")}>
-                    I confirm that I am the true beneficial owner of the funds used to open and operate this account. *
-                  </span>
-                </label>
-              </div>
-            )}
-            {step === 3 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <p className="sm:col-span-2 text-sm text-muted-foreground">
-                  Opening an account online requires a live identity check: a clear selfie taken with your smartphone
-                  or webcam, matching the photo ID you uploaded. You may also be contacted for a short video
-                  verification call before your account is activated.
-                </p>
-                <FileField
-                  label="Live selfie photo (upload)"
+                  label="Photo of yourself (upload)"
                   required
                   file={selfieDoc}
                   invalid={isInvalid("docs:selfieDoc")}
@@ -314,24 +578,9 @@ function RegisterPage() {
                   className="sm:col-span-2"
                   accept="image/*"
                 />
-                <label className="flex items-start gap-2 sm:col-span-2">
-                  <Checkbox checked={form.selfieConsent} onCheckedChange={(v) => set("selfieConsent", Boolean(v))} className={cn("mt-0.5", isInvalid("selfieConsent") && "border-destructive")} />
-                  <span className={cn("text-sm text-muted-foreground", isInvalid("selfieConsent") && "text-destructive")}>
-                    I consent to selfie-based identity verification and, if requested, a live video verification call. *
-                  </span>
-                </label>
               </div>
             )}
-            {step === 4 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Full name" val={form.kinName} onChange={(v) => set("kinName", v)} />
-                <Field label="Relationship" val={form.kinRelation} onChange={(v) => set("kinRelation", v)} />
-                <Field label="Phone" val={form.kinPhone} onChange={(v) => set("kinPhone", v)} />
-                <Field label="Email" val={form.kinEmail} onChange={(v) => set("kinEmail", v)} />
-                <Field label="Address" val={form.kinAddress} onChange={(v) => set("kinAddress", v)} className="sm:col-span-2" />
-              </div>
-            )}
-            {step === 5 && (
+            {step === 2 && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField label="Account type" required val={form.accountType} onChange={(v) => set("accountType", v)} options={ACCOUNT_TYPES} invalid={isInvalid("accountType")} className="sm:col-span-2" />
                 <Field label="Password (min. 8 characters)" type="password" required val={form.password} onChange={(v) => set("password", v)} invalid={isInvalid("password")} />
@@ -346,37 +595,39 @@ function RegisterPage() {
                 </label>
               </div>
             )}
-            {step === 6 && (
-              <div className="grid gap-4">
-                <p className="text-sm text-muted-foreground">
-                  Type your full legal name below to electronically sign your account opening documents, consistent
-                  with the e-signature process used for online bank applications.
-                </p>
-                <Field
-                  label={`Type your full name to sign ("${fullLegalName}")`}
-                  required
-                  val={form.signatureName}
-                  onChange={(v) => set("signatureName", v)}
-                  invalid={isInvalid("signatureName")}
-                />
-                <label className="flex items-start gap-2">
-                  <Checkbox checked={form.eSignConsent} onCheckedChange={(v) => set("eSignConsent", Boolean(v))} className={cn("mt-0.5", isInvalid("eSignConsent") && "border-destructive")} />
-                  <span className={cn("text-sm text-muted-foreground", isInvalid("eSignConsent") && "text-destructive")}>
-                    I understand that typing my name above constitutes my legally binding electronic signature. *
-                  </span>
-                </label>
-              </div>
-            )}
-            {step === 7 && (
+            {step === 3 && (
               <div className="flex flex-col items-center py-4">
-                <p className="mb-4 text-sm text-muted-foreground">Demo code: <span className="font-mono font-semibold text-foreground">123456</span></p>
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                {isDemoMode && (
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Demo code: <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
+                  </p>
+                )}
+                <InputOTP
+                  maxLength={OTP_LENGTH}
+                  value={otp}
+                  onChange={(v) => { setOtp(v); setOtpError(""); }}
+                >
                   <InputOTPGroup>
-                    {[0,1,2,3,4,5].map((i) => <InputOTPSlot key={i} index={i} />)}
+                    {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+                      <InputOTPSlot key={i} index={i} className={cn(otpError && "border-destructive")} />
+                    ))}
                   </InputOTPGroup>
                 </InputOTP>
-                {isInvalid("otp") && <p className="mt-2 text-xs text-destructive">Enter all 6 digits to continue.</p>}
-                <p className="mt-4 text-xs text-muted-foreground">Resend available in 60 seconds</p>
+                {isInvalid("otp") && !otpError && (
+                  <p className="mt-2 text-xs text-destructive">Enter all {OTP_LENGTH} digits to continue.</p>
+                )}
+                {otpError && <p className="mt-2 text-xs text-destructive">{otpError}</p>}
+                <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
+                  {otpSending ? (
+                    <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Sending code…</span>
+                  ) : cooldown > 0 ? (
+                    <span>Resend available in {cooldown}s</span>
+                  ) : (
+                    <button type="button" onClick={sendOtp} className="text-primary underline underline-offset-2">
+                      Resend code
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -385,8 +636,16 @@ function RegisterPage() {
             <Button variant="ghost" onClick={back} disabled={step === 0}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
-            <Button onClick={next} disabled={attempted && !canNext()} className="gradient-primary text-primary-foreground">
-              {step === steps.length - 1 ? "Verify & finish" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              onClick={next}
+              disabled={(attempted && !canNext()) || otpVerifying}
+              className="gradient-primary text-primary-foreground"
+            >
+              {otpVerifying ? (
+                <>Verifying… <Loader2 className="ml-2 h-4 w-4 animate-spin" /></>
+              ) : (
+                <>{step === steps.length - 1 ? "Create account" : "Continue"} <ArrowRight className="ml-2 h-4 w-4" /></>
+              )}
             </Button>
           </div>
         </Card>
@@ -411,6 +670,7 @@ function Field({
     </div>
   );
 }
+
 function SelectField({
   label, val, onChange, options, className = "", required = false, invalid = false,
 }: { label: string; val: string; onChange: (v: string) => void; options: string[]; className?: string; required?: boolean; invalid?: boolean }) {
@@ -425,6 +685,57 @@ function SelectField({
     </div>
   );
 }
+
+function PhoneField({
+  label, val, onChange, countryIso2, onCountryChange, className = "", required = false, invalid = false,
+}: {
+  label: string; val: string; onChange: (v: string) => void;
+  countryIso2: string; onCountryChange: (iso2: string) => void;
+  className?: string; required?: boolean; invalid?: boolean;
+}) {
+  const selectedCountry = COUNTRIES.find((c) => c.iso2 === countryIso2);
+
+  return (
+    <div className={className}>
+      <Label className="text-xs">{label}{required && <span className="text-destructive"> *</span>}</Label>
+      <div className="mt-1.5 flex gap-2">
+        <Select value={countryIso2} onValueChange={onCountryChange}>
+          <SelectTrigger className={cn("w-[110px] shrink-0", invalid && "border-destructive ring-1 ring-destructive")}>
+            <SelectValue placeholder="Code">
+              {selectedCountry && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-base leading-none">{getFlagEmoji(selectedCountry.iso2)}</span>
+                  <span>{selectedCountry.dial}</span>
+                </span>
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {COUNTRIES.map((c) => (
+              <SelectItem key={c.iso2} value={c.iso2}>
+                <span className="flex items-center gap-2">
+                  <span className="text-base leading-none">{getFlagEmoji(c.iso2)}</span>
+                  <span className="font-medium">{c.dial}</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[120px]">{c.name}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={val}
+          onChange={(e) => onChange(e.target.value.replace(/[^\d\s-]/g, ""))}
+          type="tel"
+          inputMode="tel"
+          placeholder="xxx xxx xxx"
+          className={cn("flex-1", invalid && "border-destructive focus-visible:ring-destructive")}
+        />
+      </div>
+      {invalid && <p className="mt-1 text-xs text-destructive">A valid phone number is required.</p>}
+    </div>
+  );
+}
+
 function FileField({
   label, file, onChange, className = "", required = false, invalid = false, accept = "image/*,application/pdf",
 }: { label: string; file: KycFile | null; onChange: (f: File | null) => void; className?: string; required?: boolean; invalid?: boolean; accept?: string }) {
