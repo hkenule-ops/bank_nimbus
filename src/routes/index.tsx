@@ -11,6 +11,11 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
+// Shared gold-on-blue treatment for anything that previously used
+// "gradient-primary text-primary-foreground" (icon badges + primary CTAs).
+// Background: gold. Foreground (icon/text): blue, for contrast.
+const GOLD_PRIMARY = "bg-[#c9aa54] text-primary-foreground hover:bg-[#c9a52f]";
+
 function Landing() {
   return (
     <div className="min-h-screen bg-background">
@@ -45,10 +50,10 @@ function Hero() {
             Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin console, transfers, cards and reporting — built to look and feel like the world's best fintechs.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button asChild size="lg" className="w-full justify-center gradient-primary text-primary-foreground shadow-elevated hover:opacity-95 sm:w-auto">
+            <Button asChild size="lg" className={`w-full justify-center ${GOLD_PRIMARY} shadow-elevated sm:w-auto`}>
               <Link to="/register">Open an account <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto"><Link to="/login">Sign in</Link></Button>
+            <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto hover:text-[#c9aa54]"><Link to="/login">Sign in</Link></Button>
           </div>
           <div className="mt-10 grid max-w-md grid-cols-1 gap-4 text-sm sm:grid-cols-3 sm:gap-6">
             {[
@@ -104,7 +109,7 @@ function Services() {
       <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => (
           <Card key={it.title} className="group relative overflow-hidden border-border/60 p-6 transition-all hover:-translate-y-1 hover:shadow-elevated">
-            <div className="grid h-11 w-11 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-elevated">
+            <div className={`grid h-11 w-11 place-items-center rounded-xl ${GOLD_PRIMARY} shadow-elevated`}>
               <it.icon className="h-5 w-5" />
             </div>
             <h3 className="mt-5 text-lg font-semibold">{it.title}</h3>
@@ -152,7 +157,9 @@ function Features() {
                 <div className="text-xs text-muted-foreground">SIX Swiss Exchange</div>
                 <div className="text-lg font-semibold">Live Market Overview</div>
               </div>
-              <div className="rounded-full gradient-primary px-3 py-1 text-xs text-primary-foreground">Live</div>
+              <div className="rounded-full bg-red-500 px-3 py-1 text-xs text-white">
+  Live
+</div>
             </div>
 
             <div className="mt-6">
@@ -207,7 +214,7 @@ function Security() {
           { icon: BarChart3, t: "Full audit logs", b: "Every admin action is traceable in the audit log for accountability." },
         ].map((it) => (
           <Card key={it.t} className="p-6">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
+            <div className={`grid h-11 w-11 place-items-center rounded-xl ${GOLD_PRIMARY}`}>
               <it.icon className="h-5 w-5" />
             </div>
             <h3 className="mt-5 font-semibold">{it.t}</h3>
@@ -281,8 +288,8 @@ function Contact() {
         <h2 className="text-3xl font-bold sm:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">Open a simulated account in seconds and experience the full customer portal end-to-end.</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-          <Button asChild size="lg" className="w-full justify-center gradient-primary text-primary-foreground shadow-elevated sm:w-auto"><Link to="/register">Get started</Link></Button>
-          <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto"><Link to="/login">I have an account</Link></Button>
+          <Button asChild size="lg" className={`w-full justify-center ${GOLD_PRIMARY} shadow-elevated sm:w-auto`}><Link to="/register">Get started</Link></Button>
+          <Button asChild size="lg" variant="outline" className="w-full justify-center sm:w-auto hover:text-[#c9aa54]"><Link to="/login">I have an account</Link></Button>
         </div>
       </div>
     </section>
