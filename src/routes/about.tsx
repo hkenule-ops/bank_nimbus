@@ -1,24 +1,263 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { ArrowRight, Sparkles, Award, Target } from "lucide-react";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({ meta: [{ title: "About — Bangue Herutage Bank" }, { name: "description", content: "Learn about the Bangue Herutage Bank digital banking simulation platform." }] }),
+  head: () => ({
+    meta: [
+      { title: "About — Bangue Herutage Bank" },
+      { name: "description", content: "Learn about the Bangue Herutage Bank digital banking simulation platform." },
+    ],
+  }),
   component: About,
 });
+
+const GOLD_PRIMARY = "bg-[#c9aa54] text-primary-foreground hover:bg-[#c9a52f]";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 60 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.7, ease: "easeOut" }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+function FullWidthImage({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.9 }}
+      className="relative h-[560px] w-full overflow-hidden rounded-3xl"
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      {caption && (
+        <div className="absolute bottom-8 left-8 right-8 bg-black/60 backdrop-blur-sm px-6 py-4 text-white rounded-2xl">
+          <p className="text-sm">{caption}</p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
 
 function About() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold sm:text-5xl">About Bangue Herutage</h1>
-        <div className="prose prose-neutral dark:prose-invert mt-8 space-y-6 text-muted-foreground">
-          <p>Bangue Herutage Bank is a digital banking management and simulation platform. It's built to demonstrate the shape of a modern retail bank — from onboarding and dashboards to cards, transfers and admin operations — without connecting to any real financial infrastructure.</p>
-          <p>Nothing in this platform issues real cards, moves real money, or interacts with card networks. All balances, transfers, and cards are simulated records stored inside the application's own database, designed to help teams learn, prototype and evaluate.</p>
-          <p>Our craft principle is simple: banking software people <em>enjoy</em> using. Clean information hierarchy, purposeful motion, and the metrics that matter — front and center.</p>
+
+      {/* Full-bleed Hero */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/id/1015/2000/1200')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/70 to-black" />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="relative z-10 text-center px-6 max-w-5xl"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm backdrop-blur mb-6"
+          >
+            <Sparkles className="h-4 w-4" /> Since 2025
+          </motion.div>
+          <h1 className="text-6xl md:text-7xl font-bold tracking-tighter text-white">
+            The future of banking<br />starts with great <span className="text-[#c9aa54]">design</span>.
+          </h1>
+          <p className="mt-6 text-xl text-white/80 max-w-2xl mx-auto">
+            Bangue Herutage is a premium digital banking simulation — built to inspire and demonstrate excellence in fintech interfaces.
+          </p>
+        </motion.div>
+      </section>
+
+      {/* Introduction */}
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="max-w-5xl mx-auto px-6 py-20"
+      >
+        <div className="prose prose-lg dark:prose-invert max-w-none">
+          <p className="text-xl leading-relaxed text-muted-foreground">
+            Bangue Herutage Bank is a fully simulated digital banking platform created to showcase what modern retail banking can feel like — elegant, fast, trustworthy, and delightful.
+          </p>
         </div>
+      </motion.div>
+
+      {/* Image Gallery Strip */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border"
+      >
+        {[
+          "https://picsum.photos/id/201/800/600",
+          "https://picsum.photos/id/106/800/600",
+          "https://picsum.photos/id/133/800/600",
+          "https://picsum.photos/id/1074/800/600",
+        ].map((src, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.03 }}
+            transition={{ duration: 0.4 }}
+            className="aspect-video overflow-hidden"
+          >
+            <img src={src} alt="" className="h-full w-full object-cover" />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <div className="max-w-5xl mx-auto px-6 py-20 space-y-24">
+        {/* Story Section */}
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="grid lg:grid-cols-2 gap-16 items-center"
+        >
+          <motion.div variants={fadeInUp}>
+            <h2 className="text-4xl font-bold tracking-tight">Our Story</h2>
+            <div className="mt-8 space-y-6 text-lg text-muted-foreground">
+              <p>
+                We set out to build something better — a banking experience that doesn't feel like banking software. 
+                One that feels calm, clear, and human.
+              </p>
+              <p>
+                Every pixel, motion, and interaction was designed with intention. The result is Bangue Herutage — 
+                a complete reference implementation for teams building the next generation of financial products.
+              </p>
+            </div>
+          </motion.div>
+          <FullWidthImage
+            src="https://picsum.photos/id/1016/1200/800"
+            alt="Team working on banking interface"
+            caption="Crafted with care by people who love beautiful software."
+          />
+        </motion.div>
+
+        {/* Vision Section */}
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="grid lg:grid-cols-2 gap-16 items-center"
+        >
+          <FullWidthImage
+            src="https://picsum.photos/id/870/1200/800"
+            alt="Modern banking dashboard"
+            caption="Customer dashboard — clean hierarchy and purposeful design."
+          />
+          <motion.div variants={fadeInUp}>
+            <div className="inline-flex items-center gap-2 text-[#c9aa54]">
+              <Target className="h-6 w-6" />
+              <span className="font-semibold uppercase tracking-widest">Our Vision</span>
+            </div>
+            <h2 className="mt-4 text-4xl font-bold tracking-tight">Banking software people enjoy using</h2>
+            <p className="mt-8 text-lg text-muted-foreground">
+              We believe financial tools should reduce stress, not create it. That’s why we obsess over clarity, 
+              delightful interactions, and thoughtful details that make complex tasks feel simple.
+            </p>
+          </motion.div>
+        </motion.div>
+
+        {/* Values / Highlights */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="text-center text-4xl font-bold tracking-tight mb-12">What Sets Us Apart</h2>
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-3 gap-8"
+          >
+            {[
+              {
+                img: "https://picsum.photos/id/201/600/400",
+                title: "Premium Experience",
+                desc: "Carefully designed interfaces that feel luxurious yet approachable."
+              },
+              {
+                img: "https://picsum.photos/id/106/600/400",
+                title: "Realistic Simulation",
+                desc: "Balances, transfers, cards, and market data — all behaving like a real bank."
+              },
+              {
+                img: "https://picsum.photos/id/133/600/400",
+                title: "Built for Developers",
+                desc: "Clean architecture, modern stack, and thoughtful UX patterns you can learn from."
+              },
+            ].map((item, i) => (
+              <motion.div key={i} variants={fadeInUp} className="group">
+                <div className="overflow-hidden rounded-3xl">
+                  <img
+                    src={item.img}
+                    alt={item.title}
+                    className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+                <h3 className="mt-6 text-2xl font-semibold">{item.title}</h3>
+                <p className="mt-3 text-muted-foreground">{item.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
+
+      {/* Final Full-Width Statement */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="bg-gradient-to-br from-[#1a252f] to-black py-28 text-white"
+      >
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <motion.div
+            initial={{ scale: 0.8, rotate: -10 }}
+            whileInView={{ scale: 1, rotate: 0 }}
+            viewport={{ once: true }}
+          >
+            <Award className="mx-auto h-16 w-16 text-[#c9aa54]" />
+          </motion.div>
+          <h2 className="mt-8 text-5xl font-bold tracking-tight">
+            Made for those who care about craft.
+          </h2>
+          <p className="mt-6 text-xl text-white/70">
+            Whether you're a designer, developer, or fintech founder — we built Bangue Herutage to inspire you.
+          </p>
+          <motion.a
+            href="/register"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            className={`mt-10 inline-flex items-center gap-3 rounded-full px-10 py-4 text-lg font-semibold transition-all ${GOLD_PRIMARY}`}
+          >
+            Start Exploring <ArrowRight className="h-5 w-5" />
+          </motion.a>
+        </div>
+      </motion.div>
+
       <SiteFooter />
     </div>
   );

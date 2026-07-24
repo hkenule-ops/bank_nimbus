@@ -48,7 +48,7 @@
   --shadow-card: 0 1px 3px rgba(11, 30, 62, 0.06), 0 12px 30px -10px rgba(11, 30, 62, 0.1);
   --shadow-elevated: 0 24px 70px -24px rgba(11, 30, 62, 0.28);
 
-  --gradient-primary: linear-gradient(135deg, #b8901f 0%, #0b1e3e 100%);
+  --gradient-primary: #c9aa54;
   --gradient-brand: linear-gradient(135deg, #0b1e3e 0%, #b8901f 100%);
   --gradient-card: linear-gradient(135deg, rgba(255, 253, 248, 0.96) 0%, rgba(243, 235, 216, 0.9) 100%);
   --gradient-hero: radial-gradient(ellipse at top left, rgba(184, 144, 31, 0.18) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(11, 30, 62, 0.12) 0%, transparent 55%);
@@ -176,4 +176,124 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* ==========================================================================
+   Motion — scroll reveals + ambient/hero animation
+   ========================================================================== */
+
+/* Gentle vertical bob — used on the floating balance card */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float 5s ease-in-out infinite; }
+
+/* Hero background blobs — faster, wider-travel drift (paired with mouse parallax in JS via --px/--py) */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -50px) scale(1.15); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+
+@keyframes float-slower {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 40px) scale(1.2); }
+}
+.animate-float-slower { animation: float-slower 8s ease-in-out infinite; }
+
+/* Background gradient wash drift */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* Primary CTA — breathing scale + glow ring + bouncing arrow + shimmer sweep */
+@keyframes cta-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+.animate-cta-pulse { animation: cta-pulse 2.4s ease-in-out infinite; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 170, 84, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(201, 170, 84, 0); }
+}
+.animate-glow-pulse { animation: glow-pulse 2.4s ease-in-out infinite; }
+
+@keyframes bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+.animate-bounce-x { animation: bounce-x 1.2s ease-in-out infinite; }
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(150%) skewX(-20deg); }
+}
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shimmer-sweep 2.8s ease-in-out infinite;
+}
+
+/* Ticker */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 22s linear infinite; }
+
+/* Slow-spinning decorative icons (hero sparkle, testimonial quote mark) */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 7s linear infinite; }
+
+/* Scroll-triggered reveal (paired with the useReveal hook / <Reveal> component) */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-slower,
+  .animate-gradient-shift,
+  .animate-cta-pulse,
+  .animate-glow-pulse,
+  .animate-bounce-x,
+  .animate-marquee,
+  .animate-spin-slow,
+  .shimmer-sweep::after {
+    animation: none !important;
+  }
+  .hero-blob {
+    transform: none !important;
+    transition: none !important;
+  }
 }
