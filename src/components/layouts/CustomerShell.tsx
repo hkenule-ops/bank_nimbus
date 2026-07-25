@@ -3,13 +3,15 @@ import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/lib/mock-auth";
 import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Send, CreditCard, Users, User, Bell, Settings, LogOut, Receipt } from "lucide-react";
+import { LayoutDashboard, Send, CreditCard, Users, User, Bell, Settings, LogOut, Receipt, Bitcoin, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items: ReadonlyArray<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/transfer", label: "Transfer", icon: Send },
   { to: "/dashboard/transactions", label: "Transactions", icon: Receipt },
+  { to: "/dashboard/crypto", label: "Crypto", icon: Bitcoin },
+  { to: "/dashboard/loans", label: "Loans", icon: Landmark },
   { to: "/dashboard/cards", label: "Cards", icon: CreditCard },
   { to: "/dashboard/beneficiaries", label: "Beneficiaries", icon: Users },
   { to: "/dashboard/profile", label: "Profile", icon: User },

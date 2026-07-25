@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/lib/mock-auth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/transactions")({
@@ -11,11 +12,22 @@ export const Route = createFileRoute("/dashboard/transactions")({
 
 function TxPage() {
   const { transactions } = useAuth();
+  const { currency, toggleCurrency, format } = useCurrency();
+
   return (
     <div className="space-y-6 pb-24 md:pb-8">
-      <div>
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Every credit and debit on your account.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Transactions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Every credit and debit on your account.</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleCurrency}
+          className="shrink-0 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+        >
+          Showing {currency} — tap to switch
+        </button>
       </div>
       <Card className="overflow-hidden">
         <ul className="divide-y divide-border">
@@ -33,7 +45,7 @@ function TxPage() {
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="text-[10px]">{t.status}</Badge>
                 <div className={`text-sm font-semibold ${t.type === "Credit" ? "text-success" : ""}`}>
-                  {t.type === "Credit" ? "+" : "-"}{t.amount.toLocaleString(undefined, { style: "currency", currency: "USD" })}
+                  {t.type === "Credit" ? "+" : "-"}{format(t.amount)}
                 </div>
               </div>
             </li>

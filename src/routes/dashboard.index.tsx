@@ -4,18 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/lib/currency";
 import { ArrowDownLeft, ArrowUpRight, Send, CreditCard, Users, Plus, ShieldCheck, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
 });
 
-function formatMoney(n: number) {
-  return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
-}
-
 function DashboardHome() {
   const { user, transactions } = useAuth();
+  const { currency, toggleCurrency, format } = useCurrency();
   if (!user) return null;
 
   return (
@@ -23,15 +21,25 @@ function DashboardHome() {
       <section>
         <div className="glass-card overflow-hidden rounded-3xl p-8">
           <div className="flex flex-wrap items-start justify-between gap-6">
-            <div>
+            <button
+              type="button"
+              onClick={toggleCurrency}
+              className="group text-left"
+              aria-label={`Switch balance to ${currency === "USD" ? "Swiss francs" : "US dollars"}`}
+            >
               <div className="text-sm text-muted-foreground">Available balance</div>
-              <div className="mt-1 text-4xl font-bold sm:text-5xl">{formatMoney(user.balance)}</div>
+              <div className="mt-1 text-4xl font-bold transition-opacity group-hover:opacity-70 sm:text-5xl">
+                {format(user.balance)}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4">
+                Tap to view in {currency === "USD" ? "CHF" : "USD"}
+              </div>
               <div className="mt-3 flex items-center gap-3 text-sm">
                 <Badge variant="secondary" className="rounded-full">{user.accountType}</Badge>
                 <span className="text-muted-foreground">•••• {user.accountNumber.slice(-4)}</span>
                 <span className="flex items-center gap-1 text-success"><TrendingUp className="h-3 w-3" /> +2.4%</span>
               </div>
-            </div>
+            </button>
             <div className="flex flex-wrap gap-2">
               <Button asChild className="gradient-primary text-primary-foreground shadow-elevated"><Link to="/dashboard/transfer"><Send className="mr-2 h-4 w-4" /> Transfer</Link></Button>
               <Button variant="outline" asChild><Link to="/dashboard/cards"><CreditCard className="mr-2 h-4 w-4" /> Cards</Link></Button>
@@ -66,7 +74,7 @@ function DashboardHome() {
                   </div>
                 </div>
                 <div className={`text-sm font-semibold ${t.type === "Credit" ? "text-success" : ""}`}>
-                  {t.type === "Credit" ? "+" : "-"}{formatMoney(t.amount)}
+                  {t.type === "Credit" ? "+" : "-"}{format(t.amount)}
                 </div>
               </li>
             ))}

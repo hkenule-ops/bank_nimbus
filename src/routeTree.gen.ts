@@ -22,6 +22,8 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as DashboardTransferRouteImport } from './routes/dashboard.transfer'
 import { Route as DashboardTransactionsRouteImport } from './routes/dashboard.transactions'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard.profile'
+import { Route as DashboardLoansRouteImport } from './routes/dashboard.loans'
+import { Route as DashboardCryptoRouteImport } from './routes/dashboard.crypto'
 import { Route as DashboardCardsRouteImport } from './routes/dashboard.cards'
 import { Route as DashboardBeneficiariesRouteImport } from './routes/dashboard.beneficiaries'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
@@ -98,6 +100,16 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardLoansRoute = DashboardLoansRouteImport.update({
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCryptoRoute = DashboardCryptoRouteImport.update({
+  id: '/crypto',
+  path: '/crypto',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardCardsRoute = DashboardCardsRouteImport.update({
   id: '/cards',
   path: '/cards',
@@ -168,6 +180,8 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/crypto': typeof DashboardCryptoRoute
+  '/dashboard/loans': typeof DashboardLoansRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/transactions': typeof DashboardTransactionsRoute
   '/dashboard/transfer': typeof DashboardTransferRoute
@@ -191,6 +205,8 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/crypto': typeof DashboardCryptoRoute
+  '/dashboard/loans': typeof DashboardLoansRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/transactions': typeof DashboardTransactionsRoute
   '/dashboard/transfer': typeof DashboardTransferRoute
@@ -217,6 +233,8 @@ export interface FileRoutesById {
   '/admin/transactions': typeof AdminTransactionsRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/crypto': typeof DashboardCryptoRoute
+  '/dashboard/loans': typeof DashboardLoansRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/transactions': typeof DashboardTransactionsRoute
   '/dashboard/transfer': typeof DashboardTransferRoute
@@ -244,6 +262,8 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
+    | '/dashboard/crypto'
+    | '/dashboard/loans'
     | '/dashboard/profile'
     | '/dashboard/transactions'
     | '/dashboard/transfer'
@@ -267,6 +287,8 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
+    | '/dashboard/crypto'
+    | '/dashboard/loans'
     | '/dashboard/profile'
     | '/dashboard/transactions'
     | '/dashboard/transfer'
@@ -292,6 +314,8 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
+    | '/dashboard/crypto'
+    | '/dashboard/loans'
     | '/dashboard/profile'
     | '/dashboard/transactions'
     | '/dashboard/transfer'
@@ -403,6 +427,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/loans': {
+      id: '/dashboard/loans'
+      path: '/loans'
+      fullPath: '/dashboard/loans'
+      preLoaderRoute: typeof DashboardLoansRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/crypto': {
+      id: '/dashboard/crypto'
+      path: '/crypto'
+      fullPath: '/dashboard/crypto'
+      preLoaderRoute: typeof DashboardCryptoRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/cards': {
       id: '/dashboard/cards'
       path: '/cards'
@@ -505,6 +543,8 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface DashboardRouteChildren {
   DashboardBeneficiariesRoute: typeof DashboardBeneficiariesRoute
   DashboardCardsRoute: typeof DashboardCardsRoute
+  DashboardCryptoRoute: typeof DashboardCryptoRoute
+  DashboardLoansRoute: typeof DashboardLoansRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardTransactionsRoute: typeof DashboardTransactionsRoute
   DashboardTransferRoute: typeof DashboardTransferRoute
@@ -514,6 +554,8 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBeneficiariesRoute: DashboardBeneficiariesRoute,
   DashboardCardsRoute: DashboardCardsRoute,
+  DashboardCryptoRoute: DashboardCryptoRoute,
+  DashboardLoansRoute: DashboardLoansRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardTransactionsRoute: DashboardTransactionsRoute,
   DashboardTransferRoute: DashboardTransferRoute,
