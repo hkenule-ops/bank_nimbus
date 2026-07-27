@@ -3,20 +3,23 @@ export type AppScriptAction =
   | "loginAdmin"
   | "register"
   | "transfer"
+  | "getTransactions"
+  | "listCustomers"
+  | "listAllTransactions"
+  | "updateCustomer"
   | "sendOtp"
   | "verifyOtp"
-  // Transfer multi-layer OTP (admin-issued)
   | "createTransferOtp"
   | "getTransferOtp"
   | "listTransferOtp"
   | "adminGenerateTransferOtp"
   | "verifyTransferOtp"
   | "cancelTransferOtp"
-  // Live chat
   | "chatSend"
   | "chatPoll"
   | "chatListThreads"
-  | "chatClose";
+  | "chatClose"
+  | "ping";
 
 interface AppScriptEnvelope<T> {
   ok: boolean;
@@ -25,7 +28,11 @@ interface AppScriptEnvelope<T> {
   message?: string;
 }
 
-const APP_SCRIPT_URL = (import.meta.env.VITE_APP_SCRIPT_URL ?? "").trim();
+const APP_SCRIPT_URL = (
+  import.meta.env.VITE_APP_SCRIPT_URL ||
+  import.meta.env.VITE_APPS_SCRIPT_URL ||
+  ""
+).trim();
 
 export function isAppScriptConfigured() {
   return Boolean(APP_SCRIPT_URL);
@@ -35,6 +42,10 @@ export function getAppScriptUrl() {
   return APP_SCRIPT_URL;
 }
 
+/**
+ * POST JSON to the deployed Google Apps Script web app.
+ * Uses text/plain to avoid a CORS preflight (Apps Script limitation).
+ */
 export async function appScriptRequest<T>(
   action: AppScriptAction,
   payload: Record<string, unknown> = {},
@@ -53,23 +64,44 @@ export async function appScriptRequest<T>(
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action, ...normalizedPayload }),
+      redirect: "follow",
     });
 
     const text = await response.text();
-    const parsed = text ? JSON.parse(text) : {};
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+    } catch {
+      return {
+        ok: false,
+        error: `Apps Script returned non-JSON (${response.status}). Check deployment is "Web app" + Anyone access.`,
+      };
+    }
 
     if (!response.ok) {
-      return { ok: false, error: parsed?.error || parsed?.message || "Apps Script request failed." };
+      return {
+        ok: false,
+        error: String(parsed?.error || parsed?.message || "Apps Script request failed."),
+      };
     }
 
     if (parsed?.ok === false) {
-      return { ok: false, error: parsed?.error || parsed?.message || "Apps Script rejected the request." };
+      return {
+        ok: false,
+        error: String(parsed?.error || parsed?.message || "Apps Script rejected the request."),
+      };
     }
+
+    // Support both { ok, data } and legacy bare payloads
+    const data =
+      parsed?.data !== undefined
+        ? (parsed.data as T)
+        : (("ok" in parsed ? undefined : (parsed as T)) as T | undefined);
 
     return {
       ok: true,
-      data: parsed?.data ?? parsed,
-      message: parsed?.message,
+      data: (data ?? (parsed as unknown as T)) as T,
+      message: parsed?.message ? String(parsed.message) : undefined,
     };
   } catch (error) {
     return {

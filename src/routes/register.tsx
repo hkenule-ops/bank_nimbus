@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
 
 // Converts ISO 2-letter country code (e.g., 'US') to flag emoji (e.g., '🇺🇸')
 function getFlagEmoji(iso2: string): string {
@@ -21,33 +22,19 @@ function getFlagEmoji(iso2: string): string {
   );
 }
 
-// Google Apps Script Web App URL - same backend that stores the sheet-based
-// records. It must expose two POST actions:
-//   { action: "sendOtp", email }         -> generates a 4-digit code, stores
-//        it (with an expiry) keyed by email, and emails it via MailApp
-//   { action: "verifyOtp", email, code } -> returns { valid: boolean }
-// If this is left unset, the form runs in DEMO MODE: no network call is made
-// and the fixed DEMO_OTP code below is accepted instead, so the flow can be
-// tested end-to-end before the backend is wired up.
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
+// Registration email OTP — uses the shared Apps Script backend (VITE_APP_SCRIPT_URL).
+// Demo mode accepts DEMO_OTP when the URL is not configured.
 const DEMO_OTP = "1234";
-const isDemoMode = !APPS_SCRIPT_URL;
+const isDemoMode = !isAppScriptConfigured();
 
 async function requestEmailOtp(email: string) {
   if (isDemoMode) {
-    // Simulate network latency so the loading state is visible in testing.
     await new Promise((r) => setTimeout(r, 500));
     return { ok: true, demo: true };
   }
-  const res = await fetch(APPS_SCRIPT_URL as string, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "sendOtp", email }),
-  });
-  if (!res.ok) throw new Error("Failed to send verification code");
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error ?? "Failed to send verification code");
-  return data;
+  const res = await appScriptRequest<{ sent?: boolean }>("sendOtp", { email });
+  if (!res.ok) throw new Error(res.error ?? "Failed to send verification code");
+  return res;
 }
 
 async function verifyEmailOtp(email: string, code: string) {
@@ -55,14 +42,11 @@ async function verifyEmailOtp(email: string, code: string) {
     await new Promise((r) => setTimeout(r, 300));
     return code === DEMO_OTP;
   }
-  const res = await fetch(APPS_SCRIPT_URL as string, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "verifyOtp", email, code }),
-  });
-  if (!res.ok) throw new Error("Failed to verify code");
-  const data = await res.json();
-  return Boolean(data.valid);
+  const res = await appScriptRequest<{ valid: boolean }>("verifyOtp", { email, code });
+  if (!res.ok) throw new Error(res.error ?? "Failed to verify code");
+  // Backend may return { valid } either as data or nested
+  const data = res.data as { valid?: boolean } | undefined;
+  return Boolean(data?.valid ?? (res as unknown as { valid?: boolean }).valid);
 }
 
 export const Route = createFileRoute("/register")({
