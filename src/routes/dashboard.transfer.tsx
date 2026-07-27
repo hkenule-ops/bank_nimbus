@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useCurrency } from "@/lib/currency";
 import { toast } from "sonner";
-import { Send, ShieldCheck, ArrowLeft, CheckCircle2, Copy } from "lucide-react";
+import { Send, ShieldCheck, ArrowLeft, CheckCircle2, Copy, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/transfer")({
   head: () => ({ meta: [{ title: "Transfer — Bangue Herutage Bank" }] }),
@@ -28,6 +28,46 @@ const COUNTRIES = [
   { code: "FR", label: "France", postalLabel: "Postal code" },
   { code: "OTHER", label: "Other", postalLabel: "Postal code" },
 ] as const;
+
+const TOTAL_OTP_STAGES = 5;
+
+// Layer-specific error alerts with unique error codes
+interface LayerAlert {
+  code: string;
+  title: string;
+  desc: string;
+}
+
+const LAYER_ALERTS: Record<number, LayerAlert> = {
+  // Stage 1 (Initial OTP)
+  1: {
+    code: "ERR-AUTH-101",
+    title: "Multi-Factor Authentication Required",
+    desc: "Transaction verification required. Enter the 6-digit authentication code sent to your registered primary phone and email.",
+  },
+  // Triggered when entering Layer 2 (after Stage 1 passes)
+  2: {
+    code: "ERR-SEC-401",
+    title: "Secondary Authorization Required",
+    desc: "Initial authorization check cleared. High-value transfer threshold triggered secondary compliance review. Enter the newly issued code.",
+  },
+  // Triggered when entering Layer 3 (after Stage 2 passes)
+  3: {
+    code: "ERR-FRD-902",
+    title: "Anti-Fraud Risk Signal Flagged",
+    desc: "Automated risk protocol requires additional token validation for cross-institution routing. Input the re-issued 6-digit passcode.",
+  },
+  4: {
+    code: "ERR-CMP-309",
+    title: "Regulatory Compliance Audit",
+    desc: "Security policy layer 4 verification active. Mandatory verification code sent to registered secondary contact.",
+  },
+  5: {
+    code: "ERR-CLR-105",
+    title: "Final Settlement Authorization",
+    desc: "Final clearance protocol initialized. Complete this final security checkpoint to execute fund transfer.",
+  },
+};
 
 interface BankAddress {
   street: string;
@@ -76,9 +116,13 @@ function TransferPage() {
   const [step, setStep] = useState<"form" | "otp" | "success">("form");
   const [draft, setDraft] = useState<TransferDraft | null>(null);
   const [completed, setCompleted] = useState<CompletedTransfer | null>(null);
+
+  // Multi-step OTP state tracking with unique layer alert tracking
+  const [otpStage, setOtpStage] = useState(1);
   const [otpInput, setOtpInput] = useState("");
   const [expectedOtp, setExpectedOtp] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [layerAlert, setLayerAlert] = useState<LayerAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!user) return null;
@@ -90,7 +134,8 @@ function TransferPage() {
 
   const resetAll = () => {
     setTo(""); setRoutingNumber(""); setAddress(emptyAddress); setPhone(""); setAmount(""); setDesc("");
-    setStep("form"); setDraft(null); setCompleted(null); setOtpInput(""); setExpectedOtp(""); setOtpError("");
+    setStep("form"); setDraft(null); setCompleted(null);
+    setOtpStage(1); setOtpInput(""); setExpectedOtp(""); setOtpError(""); setLayerAlert(null);
   };
 
   const requestOtp = (e: React.FormEvent) => {
@@ -105,23 +150,47 @@ function TransferPage() {
 
     setDraft({ to, routingNumber, address, phone, amount: amtUsd, desc });
 
-    const code = generateOtp();
-    setExpectedOtp(code);
+    const firstCode = generateOtp();
+    const initialAlert = LAYER_ALERTS[1];
+
+    setOtpStage(1);
+    setExpectedOtp(firstCode);
     setOtpInput("");
     setOtpError("");
+    setLayerAlert(initialAlert); // Include red banner on the first OTP stage
     setStep("otp");
 
-    // No SMS/email backend in this demo — the code is surfaced directly so you can test the flow.
-    toast.info(`Demo mode: your verification code is ${code}`, { duration: 10000 });
+    toast.error(`[${initialAlert.code}] ${initialAlert.title}`);
+    toast.info(`Demo mode: your verification code is ${firstCode}`, { duration: 10000 });
   };
 
   const confirmOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft) return;
+    
     if (otpInput !== expectedOtp) {
-      setOtpError("That code doesn't match. Check your phone/email and try again.");
+      setOtpError("Invalid code entered. Please check your device and try again.");
       return;
     }
+
+    // Progress through layers 1 to 5
+    if (otpStage < TOTAL_OTP_STAGES) {
+      const nextStage = otpStage + 1;
+      const nextCode = generateOtp();
+      const alertForNextLayer = LAYER_ALERTS[nextStage];
+
+      setOtpStage(nextStage);
+      setExpectedOtp(nextCode);
+      setOtpInput("");
+      setOtpError("");
+      setLayerAlert(alertForNextLayer);
+
+      toast.error(`[${alertForNextLayer.code}] ${alertForNextLayer.title}`);
+      toast.info(`Demo mode: your new verification code is ${nextCode}`, { duration: 10000 });
+      return;
+    }
+
+    // Final layer validated -> execute transaction
     setSubmitting(true);
     try {
       await updateBalance(draft.amount, `Transfer to ${draft.to}${draft.desc ? ` — ${draft.desc}` : ""}`, "Debit");
@@ -198,6 +267,23 @@ function TransferPage() {
             We sent a 6-digit code to the phone and email on file for your account. Enter it below to complete this transfer.
           </p>
         </div>
+
+        {/* Dynamic Red Alert Message Banner with Error Code */}
+        {layerAlert && (
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive animate-in fade-in slide-in-from-top-2">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-destructive" />
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-destructive/20 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider">
+                  {layerAlert.code}
+                </span>
+                <h4 className="font-semibold text-sm leading-none">{layerAlert.title}</h4>
+              </div>
+              <p className="leading-relaxed opacity-90 pt-0.5">{layerAlert.desc}</p>
+            </div>
+          </div>
+        )}
+
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-3 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
@@ -214,9 +300,14 @@ function TransferPage() {
                 onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
                 placeholder="6-digit code"
                 inputMode="numeric"
-                className="mt-1.5 text-center text-lg tracking-[0.5em]"
+                className={`mt-1.5 text-center text-lg tracking-[0.5em] ${otpError ? "border-destructive focus-visible:ring-destructive" : ""}`}
               />
-              {otpError && <p className="mt-2 text-xs text-destructive">{otpError}</p>}
+              {otpError && (
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{otpError}</span>
+                </div>
+              )}
             </div>
             <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={otpInput.length !== 6 || submitting}>
               {submitting ? "Verifying…" : "Confirm and send"}
