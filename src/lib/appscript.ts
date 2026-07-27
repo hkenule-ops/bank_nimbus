@@ -1,4 +1,22 @@
-export type AppScriptAction = "login" | "loginAdmin" | "register" | "transfer";
+export type AppScriptAction =
+  | "login"
+  | "loginAdmin"
+  | "register"
+  | "transfer"
+  | "sendOtp"
+  | "verifyOtp"
+  // Transfer multi-layer OTP (admin-issued)
+  | "createTransferOtp"
+  | "getTransferOtp"
+  | "listTransferOtp"
+  | "adminGenerateTransferOtp"
+  | "verifyTransferOtp"
+  | "cancelTransferOtp"
+  // Live chat
+  | "chatSend"
+  | "chatPoll"
+  | "chatListThreads"
+  | "chatClose";
 
 interface AppScriptEnvelope<T> {
   ok: boolean;
@@ -13,19 +31,27 @@ export function isAppScriptConfigured() {
   return Boolean(APP_SCRIPT_URL);
 }
 
-export async function appScriptRequest<T>(action: AppScriptAction, payload: Record<string, unknown> = {}): Promise<AppScriptEnvelope<T>> {
+export function getAppScriptUrl() {
+  return APP_SCRIPT_URL;
+}
+
+export async function appScriptRequest<T>(
+  action: AppScriptAction,
+  payload: Record<string, unknown> = {},
+): Promise<AppScriptEnvelope<T>> {
   if (!APP_SCRIPT_URL) {
     return { ok: false, error: "Google Apps Script URL is not configured." };
   }
 
   try {
-    const normalizedPayload = Object.prototype.hasOwnProperty.call(payload, "data") && Object.keys(payload).length === 1
-      ? (payload.data as Record<string, unknown> | undefined) ?? {}
-      : payload;
+    const normalizedPayload =
+      Object.prototype.hasOwnProperty.call(payload, "data") && Object.keys(payload).length === 1
+        ? ((payload.data as Record<string, unknown> | undefined) ?? {})
+        : payload;
 
     const response = await fetch(APP_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action, ...normalizedPayload }),
     });
 

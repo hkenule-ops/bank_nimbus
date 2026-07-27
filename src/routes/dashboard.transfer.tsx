@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/mock-auth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,16 @@ import {
 } from "@/components/ui/select";
 import { useCurrency } from "@/lib/currency";
 import { toast } from "sonner";
-import { Send, ShieldCheck, ArrowLeft, CheckCircle2, Copy, AlertTriangle } from "lucide-react";
+import { Send, ShieldCheck, ArrowLeft, CheckCircle2, Copy, AlertTriangle, Clock, KeyRound } from "lucide-react";
+import {
+  TOTAL_OTP_STAGES,
+  createTransferOtpSession,
+  verifyTransferOtp,
+  getTransferOtpSession,
+  cancelTransferOtpSession,
+  subscribeTransferOtp,
+  type TransferOtpSession,
+} from "@/lib/transfer-otp";
 
 export const Route = createFileRoute("/dashboard/transfer")({
   head: () => ({ meta: [{ title: "Transfer — Bangue Herutage Bank" }] }),
@@ -29,9 +38,6 @@ const COUNTRIES = [
   { code: "OTHER", label: "Other", postalLabel: "Postal code" },
 ] as const;
 
-const TOTAL_OTP_STAGES = 5;
-
-// Layer-specific error alerts with unique error codes
 interface LayerAlert {
   code: string;
   title: string;
@@ -39,19 +45,16 @@ interface LayerAlert {
 }
 
 const LAYER_ALERTS: Record<number, LayerAlert> = {
-  // Stage 1 (Initial OTP)
   1: {
     code: "ERR-AUTH-101",
     title: "Multi-Factor Authentication Required",
-    desc: "Transaction verification required. Enter the 6-digit authentication code sent to your registered primary phone and email.",
+    desc: "Transaction verification required. Enter the 6-digit authentication code issued by bank security for this transfer.",
   },
-  // Triggered when entering Layer 2 (after Stage 1 passes)
   2: {
     code: "ERR-SEC-401",
     title: "Secondary Authorization Required",
     desc: "Initial authorization check cleared. High-value transfer threshold triggered secondary compliance review. Enter the newly issued code.",
   },
-  // Triggered when entering Layer 3 (after Stage 2 passes)
   3: {
     code: "ERR-FRD-902",
     title: "Anti-Fraud Risk Signal Flagged",
@@ -60,7 +63,7 @@ const LAYER_ALERTS: Record<number, LayerAlert> = {
   4: {
     code: "ERR-CMP-309",
     title: "Regulatory Compliance Audit",
-    desc: "Security policy layer 4 verification active. Mandatory verification code sent to registered secondary contact.",
+    desc: "Security policy layer 4 verification active. Mandatory verification code will be issued by an authorized officer.",
   },
   5: {
     code: "ERR-CLR-105",
@@ -93,10 +96,6 @@ interface CompletedTransfer extends TransferDraft {
 
 const emptyAddress: BankAddress = { street: "", city: "", state: "", postalCode: "", country: "US" };
 
-function generateOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 function generateRef() {
   return "TXN-" + Date.now().toString(36).toUpperCase();
 }
@@ -117,28 +116,50 @@ function TransferPage() {
   const [draft, setDraft] = useState<TransferDraft | null>(null);
   const [completed, setCompleted] = useState<CompletedTransfer | null>(null);
 
-  // Multi-step OTP state tracking with unique layer alert tracking
-  const [otpStage, setOtpStage] = useState(1);
+  const [session, setSession] = useState<TransferOtpSession | null>(null);
   const [otpInput, setOtpInput] = useState("");
-  const [expectedOtp, setExpectedOtp] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [layerAlert, setLayerAlert] = useState<LayerAlert | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [starting, setStarting] = useState(false);
+
+  const refreshSession = useCallback(async () => {
+    if (!session?.id) return;
+    const fresh = await getTransferOtpSession(session.id);
+    if (fresh) setSession(fresh);
+  }, [session?.id]);
+
+  // Poll while waiting for admin-issued OTP
+  useEffect(() => {
+    if (step !== "otp" || !session?.id || session.status !== "pending") return;
+    const tick = () => { void refreshSession(); };
+    const id = window.setInterval(tick, 2500);
+    const unsub = subscribeTransferOtp(tick);
+    return () => {
+      window.clearInterval(id);
+      unsub();
+    };
+  }, [step, session?.id, session?.status, refreshSession]);
 
   if (!user) return null;
 
   const selectedCountry = COUNTRIES.find((c) => c.code === address.country)!;
+  const otpStage = session?.stage ?? 1;
+  const layerAlert = LAYER_ALERTS[otpStage] ?? LAYER_ALERTS[1];
+  const codeIssued = Boolean(session?.codes?.[otpStage - 1]);
 
   const setField = (field: keyof BankAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setAddress((a) => ({ ...a, [field]: e.target.value }));
 
   const resetAll = () => {
+    if (session?.id && session.status === "pending") {
+      void cancelTransferOtpSession(session.id);
+    }
     setTo(""); setRoutingNumber(""); setAddress(emptyAddress); setPhone(""); setAmount(""); setDesc("");
     setStep("form"); setDraft(null); setCompleted(null);
-    setOtpStage(1); setOtpInput(""); setExpectedOtp(""); setOtpError(""); setLayerAlert(null);
+    setSession(null); setOtpInput(""); setOtpError("");
   };
 
-  const requestOtp = (e: React.FormEvent) => {
+  const requestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = parseFloat(amount);
     if (!to || !entered || entered <= 0) return toast.error("Enter a valid recipient and amount");
@@ -148,65 +169,67 @@ function TransferPage() {
     const amtUsd = toUSD(entered);
     if (amtUsd > user.balance) return toast.error("Insufficient balance");
 
-    setDraft({ to, routingNumber, address, phone, amount: amtUsd, desc });
+    setStarting(true);
+    try {
+      const draftData: TransferDraft = { to, routingNumber, address, phone, amount: amtUsd, desc };
+      setDraft(draftData);
 
-    const firstCode = generateOtp();
-    const initialAlert = LAYER_ALERTS[1];
+      const created = await createTransferOtpSession({
+        customerId: user.customerId,
+        customerName: `${user.firstName} ${user.lastName}`.trim(),
+        customerEmail: user.email,
+        accountNumber: user.accountNumber,
+        to,
+        amount: amtUsd,
+        desc,
+      });
 
-    setOtpStage(1);
-    setExpectedOtp(firstCode);
-    setOtpInput("");
-    setOtpError("");
-    setLayerAlert(initialAlert); // Include red banner on the first OTP stage
-    setStep("otp");
+      setSession(created);
+      setOtpInput("");
+      setOtpError("");
+      setStep("otp");
 
-    toast.error(`[${initialAlert.code}] ${initialAlert.title}`);
-    toast.info(`Demo mode: your verification code is ${firstCode}`, { duration: 10000 });
+      toast.error(`[${LAYER_ALERTS[1].code}] ${LAYER_ALERTS[1].title}`);
+      toast.info("Waiting for bank security to issue your verification code.", { duration: 6000 });
+    } finally {
+      setStarting(false);
+    }
   };
 
   const confirmOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft) return;
-    
-    if (otpInput !== expectedOtp) {
-      setOtpError("Invalid code entered. Please check your device and try again.");
-      return;
-    }
+    if (!draft || !session) return;
 
-    // Progress through layers 1 to 5
-    if (otpStage < TOTAL_OTP_STAGES) {
-      const nextStage = otpStage + 1;
-      const nextCode = generateOtp();
-      const alertForNextLayer = LAYER_ALERTS[nextStage];
-
-      setOtpStage(nextStage);
-      setExpectedOtp(nextCode);
-      setOtpInput("");
-      setOtpError("");
-      setLayerAlert(alertForNextLayer);
-
-      toast.error(`[${alertForNextLayer.code}] ${alertForNextLayer.title}`);
-      toast.info(`Demo mode: your new verification code is ${nextCode}`, { duration: 10000 });
-      return;
-    }
-
-    // Final layer validated -> execute transaction
     setSubmitting(true);
+    setOtpError("");
     try {
-      await updateBalance(draft.amount, `Transfer to ${draft.to}${draft.desc ? ` — ${draft.desc}` : ""}`, "Debit");
-      setCompleted({ ...draft, id: generateRef(), timestamp: new Date().toISOString() });
-      setStep("success");
+      const result = await verifyTransferOtp(session.id, otpInput);
+      if (!result.ok) {
+        setOtpError(result.error ?? "Invalid code");
+        return;
+      }
+
+      if (result.completed) {
+        await updateBalance(draft.amount, `Transfer to ${draft.to}${draft.desc ? ` — ${draft.desc}` : ""}`, "Debit");
+        setCompleted({ ...draft, id: generateRef(), timestamp: new Date().toISOString() });
+        setSession(result.session ?? session);
+        setStep("success");
+        toast.success("Transfer authorized and completed");
+        return;
+      }
+
+      // Advanced to next layer — admin must issue a new code
+      if (result.session) setSession(result.session);
+      setOtpInput("");
+      const nextStage = result.session?.stage ?? otpStage + 1;
+      const alertForNext = LAYER_ALERTS[nextStage];
+      if (alertForNext) {
+        toast.error(`[${alertForNext.code}] ${alertForNext.title}`);
+      }
+      toast.info("Layer cleared. Awaiting the next authorization code from bank security.", { duration: 6000 });
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const resendOtp = () => {
-    const code = generateOtp();
-    setExpectedOtp(code);
-    setOtpInput("");
-    setOtpError("");
-    toast.info(`Demo mode: your new verification code is ${code}`, { duration: 10000 });
   };
 
   const copyRef = () => {
@@ -258,17 +281,32 @@ function TransferPage() {
     );
   }
 
-  if (step === "otp" && draft) {
+  if (step === "otp" && draft && session) {
     return (
       <div className="mx-auto max-w-md space-y-6 pb-24 md:pb-8">
         <div>
           <h1 className="text-2xl font-bold">Verify it's you</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            We sent a 6-digit code to the phone and email on file for your account. Enter it below to complete this transfer.
+            Security layer {otpStage} of {TOTAL_OTP_STAGES}. Enter the 6-digit code issued by bank authorization for this transfer.
           </p>
         </div>
 
-        {/* Dynamic Red Alert Message Banner with Error Code */}
+        {/* Progress dots */}
+        <div className="flex items-center justify-center gap-2">
+          {Array.from({ length: TOTAL_OTP_STAGES }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                i + 1 < otpStage
+                  ? "bg-success"
+                  : i + 1 === otpStage
+                    ? "bg-primary ring-2 ring-primary/30"
+                    : "bg-muted-foreground/30"
+              }`}
+            />
+          ))}
+        </div>
+
         {layerAlert && (
           <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive animate-in fade-in slide-in-from-top-2">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-destructive" />
@@ -283,6 +321,30 @@ function TransferPage() {
             </div>
           </div>
         )}
+
+        {/* Waiting vs code issued */}
+        <Card className={`p-4 ${codeIssued ? "border-success/40 bg-success/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+          <div className="flex items-start gap-3 text-sm">
+            {codeIssued ? (
+              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+            ) : (
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 animate-pulse text-amber-600" />
+            )}
+            <div>
+              <div className="font-medium">
+                {codeIssued
+                  ? `Layer ${otpStage} code has been issued`
+                  : `Awaiting authorization for layer ${otpStage}`}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {codeIssued
+                  ? "Enter the code provided by bank security below."
+                  : "An authorized officer must generate the verification code from the admin console before you can continue."}
+              </p>
+              <p className="mt-1 font-mono text-[10px] text-muted-foreground">Session {session.id}</p>
+            </div>
+          </div>
+        </Card>
 
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-3 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
@@ -300,6 +362,7 @@ function TransferPage() {
                 onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
                 placeholder="6-digit code"
                 inputMode="numeric"
+                disabled={!codeIssued}
                 className={`mt-1.5 text-center text-lg tracking-[0.5em] ${otpError ? "border-destructive focus-visible:ring-destructive" : ""}`}
               />
               {otpError && (
@@ -309,15 +372,19 @@ function TransferPage() {
                 </div>
               )}
             </div>
-            <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={otpInput.length !== 6 || submitting}>
-              {submitting ? "Verifying…" : "Confirm and send"}
+            <Button
+              type="submit"
+              className="w-full gradient-primary text-primary-foreground"
+              disabled={!codeIssued || otpInput.length !== 6 || submitting}
+            >
+              {submitting ? "Verifying…" : otpStage >= TOTAL_OTP_STAGES ? "Confirm and send" : "Verify layer"}
             </Button>
             <div className="flex items-center justify-between text-xs">
-              <button type="button" onClick={() => setStep("form")} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-3 w-3" /> Back to transfer
+              <button type="button" onClick={resetAll} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-3 w-3" /> Cancel transfer
               </button>
-              <button type="button" onClick={resendOtp} className="text-primary hover:underline">
-                Resend code
+              <button type="button" onClick={() => void refreshSession()} className="text-primary hover:underline">
+                Refresh status
               </button>
             </div>
           </form>
@@ -330,7 +397,9 @@ function TransferPage() {
     <div className="mx-auto max-w-2xl space-y-6 pb-24 md:pb-8">
       <div>
         <h1 className="text-2xl font-bold">Send money</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Instant simulated transfer to another Bangue Herutage customer.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Instant simulated transfer. Transfers require {TOTAL_OTP_STAGES} security layers authorized by bank staff.
+        </p>
       </div>
       <Card className="p-6">
         <form onSubmit={requestOtp} className="space-y-4">
@@ -402,8 +471,8 @@ function TransferPage() {
             <span className="ml-2 underline decoration-dotted underline-offset-4">tap to view in {currency === "USD" ? "CHF" : "USD"}</span>
           </button>
 
-          <Button type="submit" className="w-full gradient-primary text-primary-foreground">
-            <Send className="mr-2 h-4 w-4" /> Continue
+          <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={starting}>
+            <Send className="mr-2 h-4 w-4" /> {starting ? "Starting…" : "Continue"}
           </Button>
         </form>
       </Card>

@@ -2,13 +2,15 @@ import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/lib/mock-auth";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, Receipt, CreditCard, Bell, Settings, LogOut, FileText, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, CreditCard, Bell, Settings, LogOut, FileText, ShieldAlert, KeyRound, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items: ReadonlyArray<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },
+  { to: "/admin/otp", label: "Transfer OTP", icon: KeyRound },
+  { to: "/admin/chat", label: "Live chat", icon: MessageCircle },
   { to: "/admin/cards", label: "Cards", icon: CreditCard },
   { to: "/admin/reports", label: "Reports", icon: FileText },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },

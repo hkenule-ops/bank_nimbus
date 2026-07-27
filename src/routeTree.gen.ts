@@ -30,8 +30,10 @@ import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminOtpRouteImport } from './routes/admin.otp'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
+import { Route as AdminChatRouteImport } from './routes/admin.chat'
 import { Route as AdminCardsRouteImport } from './routes/admin.cards'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 
@@ -140,6 +142,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOtpRoute = AdminOtpRouteImport.update({
+  id: '/otp',
+  path: '/otp',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -148,6 +155,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChatRoute = AdminChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCardsRoute = AdminCardsRouteImport.update({
@@ -172,8 +184,10 @@ export interface FileRoutesByFullPath {
   '/services': typeof ServicesRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
+  '/admin/chat': typeof AdminChatRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otp': typeof AdminOtpRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
@@ -197,8 +211,10 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
+  '/admin/chat': typeof AdminChatRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otp': typeof AdminOtpRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
@@ -225,8 +241,10 @@ export interface FileRoutesById {
   '/services': typeof ServicesRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
+  '/admin/chat': typeof AdminChatRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otp': typeof AdminOtpRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
@@ -254,8 +272,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/admin/audit'
     | '/admin/cards'
+    | '/admin/chat'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/otp'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
@@ -279,8 +299,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/admin/audit'
     | '/admin/cards'
+    | '/admin/chat'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/otp'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
@@ -306,8 +328,10 @@ export interface FileRouteTypes {
     | '/services'
     | '/admin/audit'
     | '/admin/cards'
+    | '/admin/chat'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/otp'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
@@ -484,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/otp': {
+      id: '/admin/otp'
+      path: '/otp'
+      fullPath: '/admin/otp'
+      preLoaderRoute: typeof AdminOtpRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/notifications': {
       id: '/admin/notifications'
       path: '/notifications'
@@ -496,6 +527,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/admin/customers'
       preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/chat': {
+      id: '/admin/chat'
+      path: '/chat'
+      fullPath: '/admin/chat'
+      preLoaderRoute: typeof AdminChatRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/cards': {
@@ -518,8 +556,10 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCardsRoute: typeof AdminCardsRoute
+  AdminChatRoute: typeof AdminChatRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminOtpRoute: typeof AdminOtpRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTransactionsRoute: typeof AdminTransactionsRoute
@@ -529,8 +569,10 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminCardsRoute: AdminCardsRoute,
+  AdminChatRoute: AdminChatRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminOtpRoute: AdminOtpRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTransactionsRoute: AdminTransactionsRoute,
