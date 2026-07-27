@@ -26,11 +26,11 @@ import { Route as DashboardLoansRouteImport } from './routes/dashboard.loans'
 import { Route as DashboardCryptoRouteImport } from './routes/dashboard.crypto'
 import { Route as DashboardCardsRouteImport } from './routes/dashboard.cards'
 import { Route as DashboardBeneficiariesRouteImport } from './routes/dashboard.beneficiaries'
+import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 import { Route as AdminTransactionsRouteImport } from './routes/admin.transactions'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCardsRouteImport } from './routes/admin.cards'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
@@ -120,6 +120,11 @@ const DashboardBeneficiariesRoute = DashboardBeneficiariesRouteImport.update({
   path: '/beneficiaries',
   getParentRoute: () => DashboardRoute,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin_/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -138,11 +143,6 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
@@ -173,11 +173,11 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/crypto': typeof DashboardCryptoRoute
@@ -198,11 +198,11 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/crypto': typeof DashboardCryptoRoute
@@ -226,11 +226,11 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/cards': typeof AdminCardsRoute
   '/admin/customers': typeof AdminCustomersRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
+  '/admin_/login': typeof AdminLoginRoute
   '/dashboard/beneficiaries': typeof DashboardBeneficiariesRoute
   '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/crypto': typeof DashboardCryptoRoute
@@ -255,11 +255,11 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/cards'
     | '/admin/customers'
-    | '/admin/login'
     | '/admin/notifications'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
+    | '/admin/login'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
     | '/dashboard/crypto'
@@ -280,11 +280,11 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/cards'
     | '/admin/customers'
-    | '/admin/login'
     | '/admin/notifications'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
+    | '/admin/login'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
     | '/dashboard/crypto'
@@ -307,11 +307,11 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/cards'
     | '/admin/customers'
-    | '/admin/login'
     | '/admin/notifications'
     | '/admin/reports'
     | '/admin/settings'
     | '/admin/transactions'
+    | '/admin_/login'
     | '/dashboard/beneficiaries'
     | '/dashboard/cards'
     | '/dashboard/crypto'
@@ -332,6 +332,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ServicesRoute: typeof ServicesRoute
+  AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -455,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBeneficiariesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/admin_/login': {
+      id: '/admin_/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/transactions': {
       id: '/admin/transactions'
       path: '/transactions'
@@ -481,13 +489,6 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/admin/notifications'
       preLoaderRoute: typeof AdminNotificationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/customers': {
@@ -518,7 +519,6 @@ interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCardsRoute: typeof AdminCardsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -530,7 +530,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminCardsRoute: AdminCardsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
-  AdminLoginRoute: AdminLoginRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
@@ -575,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ServicesRoute: ServicesRoute,
+  AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

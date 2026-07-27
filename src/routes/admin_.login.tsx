@@ -1,22 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/site/Logo";
 import { useAuth } from "@/lib/mock-auth";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/admin_/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — Bangue Herutage Bank" },
-      { name: "description", content: "Sign in to your Bangue Herutage digital banking account." },
+      { title: "Admin Login — Bangue Herutage Bank" },
+      { name: "robots", content: "noindex" },
     ],
   }),
-  component: LoginPage,
+  component: AdminLogin,
 });
 
 /** Ambient drifting background blobs, matching the hero treatment */
@@ -25,19 +25,22 @@ function AmbientBlobs() {
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute -left-20 top-0 h-72 w-72 animate-float-slow rounded-full bg-[#c9aa54]/25 blur-3xl" />
       <div className="absolute -right-16 top-1/3 h-80 w-80 animate-float-slower rounded-full bg-primary/25 blur-3xl" />
-      <div className="absolute bottom-0 left-1/4 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/15 blur-3xl" style={{ animationDelay: "2s" }} />
+      <div
+        className="absolute bottom-0 left-1/4 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/15 blur-3xl"
+        style={{ animationDelay: "2s" }}
+      />
     </div>
   );
 }
 
-function LoginPage() {
-  const [id, setId] = useState("");
-  const [pw, setPw] = useState("");
+function AdminLogin() {
+  const { loginAdmin } = useAuth();
+  const nav = useNavigate();
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { login } = useAuth();
-  const nav = useNavigate();
 
   useEffect(() => {
     // trigger entrance animation on mount
@@ -49,12 +52,12 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const ok = await login(id, pw);
+      const ok = await loginAdmin(u, p);
       if (ok) {
-        toast.success("Welcome back");
-        nav({ to: "/dashboard" });
+        toast.success("Admin session started");
+        nav({ to: "/admin" });
       } else {
-        toast.error("Please enter your credentials");
+        toast.error("Invalid credentials");
         setShake(true);
         setTimeout(() => setShake(false), 400);
       }
@@ -97,40 +100,57 @@ function LoginPage() {
           } ${shake ? "animate-shake" : ""}`}
           style={{ transitionDelay: "120ms" }}
         >
-          <h1 className="text-xl sm:text-2xl font-semibold">Sign in</h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">Access your Bangue Herutage account.</p>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <ShieldAlert className="h-3.5 w-3.5" /> Restricted access
+          </div>
+
+          <h1 className="text-xl sm:text-2xl font-semibold">Admin console</h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+            Sign in with your administrator credentials.
+          </p>
 
           <form onSubmit={submit} className="mt-4 space-y-3 sm:space-y-4">
             <div
-              className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+              className={`transition-all duration-500 ${
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+              }`}
               style={{ transitionDelay: "220ms" }}
             >
-              <Label htmlFor="id" className="text-xs sm:text-sm">Email or username</Label>
+              <Label htmlFor="username" className="text-xs sm:text-sm">
+                Username
+              </Label>
               <Input
-                id="id"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="alex@demo.bangueherutage"
+                id="username"
+                value={u}
+                onChange={(e) => setU(e.target.value)}
+                placeholder="admin"
                 className="mt-1 h-9 sm:h-10 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
+
             <div
-              className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+              className={`transition-all duration-500 ${
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+              }`}
               style={{ transitionDelay: "300ms" }}
             >
-              <Label htmlFor="pw" className="text-xs sm:text-sm">Password</Label>
+              <Label htmlFor="password" className="text-xs sm:text-sm">
+                Password
+              </Label>
               <Input
-                id="pw"
+                id="password"
                 type="password"
-                value={pw}
-                onChange={(e) => setPw(e.target.value)}
+                value={p}
+                onChange={(e) => setP(e.target.value)}
                 placeholder="••••••••"
                 className="mt-1 h-9 sm:h-10 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
 
             <div
-              className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+              className={`transition-all duration-500 ${
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+              }`}
               style={{ transitionDelay: "380ms" }}
             >
               <Button
@@ -152,16 +172,6 @@ function LoginPage() {
             </div>
           </form>
 
-          <div
-            className={`mt-4 flex items-center justify-between text-xs sm:text-sm transition-all duration-500 ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-            }`}
-            style={{ transitionDelay: "460ms" }}
-          >
-            <Link to="/register" className="text-primary transition-colors hover:underline">Create account</Link>
-            <span className="text-muted-foreground cursor-pointer hover:underline">Forgot password?</span>
-          </div>
-
           <ShieldCheck className="pointer-events-none absolute -right-3 -top-3 h-14 w-14 sm:h-16 sm:w-16 animate-spin-slow text-[#c9aa54]/10" />
         </Card>
 
@@ -171,7 +181,7 @@ function LoginPage() {
           }`}
           style={{ transitionDelay: "540ms" }}
         >
-          Demo — any credentials sign you in.
+          Demo credentials: admin / admin
         </p>
       </div>
     </div>
