@@ -11,10 +11,10 @@ import {
   chatSend,
   chatClose,
   subscribeChat,
+  isChatConfigured,
   type ChatThread,
   type ChatMessage,
 } from "@/lib/live-chat";
-import { isAppScriptConfigured } from "@/lib/appscript";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/chat")({
@@ -56,7 +56,7 @@ function AdminChatPage() {
 
   useEffect(() => {
     void loadThreads();
-    const id = window.setInterval(() => void loadThreads(), 4000);
+    const id = window.setInterval(() => void loadThreads(), 20000);
     const unsub = subscribeChat(() => void loadThreads());
     return () => {
       window.clearInterval(id);
@@ -73,7 +73,7 @@ function AdminChatPage() {
     lastIdRef.current = undefined;
     setMessages([]);
     void loadMessages();
-    const id = window.setInterval(() => void loadMessages(), 2000);
+    const id = window.setInterval(() => void loadMessages(), 15000);
     const unsub = subscribeChat(() => void loadMessages());
     return () => {
       window.clearInterval(id);
@@ -131,9 +131,9 @@ function AdminChatPage() {
           <h1 className="text-2xl font-bold">Live chat</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Reply to customer conversations.
-            {!isAppScriptConfigured() && (
+            {!isChatConfigured() && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
-                Demo mode uses this browser's localStorage (or set VITE_APP_SCRIPT_URL for Google Sheets).
+                Demo mode — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for live chat.
               </span>
             )}
           </p>

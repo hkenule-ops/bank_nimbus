@@ -8,15 +8,15 @@ import {
   chatPoll,
   getOrCreateVisitorId,
   subscribeChat,
+  isChatConfigured,
   type ChatMessage,
 } from "@/lib/live-chat";
-import { isAppScriptConfigured } from "@/lib/appscript";
 import { cn } from "@/lib/utils";
 
 /**
  * Floating live-chat widget mounted on every page.
- * Backend: Google Apps Script + Sheet when VITE_APP_SCRIPT_URL is set;
- * otherwise localStorage (same-browser demo).
+ * Backend: Supabase (Postgres + Realtime) when VITE_SUPABASE_URL /
+ * VITE_SUPABASE_ANON_KEY are set; otherwise chat is disabled.
  */
 export function LiveChat() {
   const { user, isAdmin } = useAuth();
@@ -61,7 +61,7 @@ export function LiveChat() {
   useEffect(() => {
     if (!open || !threadId) return;
     void loadMessages();
-    const id = window.setInterval(() => void loadMessages(), 2500);
+    const id = window.setInterval(() => void loadMessages(), 15000);
     const unsub = subscribeChat(() => void loadMessages());
     return () => {
       window.clearInterval(id);
@@ -135,7 +135,7 @@ export function LiveChat() {
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">Bangue Herutage Support</div>
               <div className="text-[11px] text-white/70">
-                {isAppScriptConfigured() ? "Live · connected" : "Demo mode · local session"}
+                {isChatConfigured() ? "Live · connected" : "Demo mode · local session"}
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-white/10" aria-label="Close">

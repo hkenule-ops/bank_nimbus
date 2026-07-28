@@ -1,4 +1,4 @@
-import { appScriptRequest, isAppScriptConfigured } from "./appscript";
+import { supabase, isSupabaseConfigured } from "./supabase";
 
 export interface ChatMessage {
   id: string;
@@ -20,29 +20,7 @@ export interface ChatThread {
   lastMessage?: string;
 }
 
-const THREAD_KEY = "bangue_chat_threads_v1";
-const MSG_KEY = "bangue_chat_messages_v1";
 const VISITOR_KEY = "bangue_chat_visitor_id";
-const CHANNEL = "bangue_chat_sync";
-
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
-  try {
-    localStorage.setItem(CHANNEL, String(Date.now()));
-  } catch {
-    /* ignore */
-  }
-}
 
 function genId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -57,6 +35,30 @@ export function getOrCreateVisitorId(): string {
   return id;
 }
 
+function rowToThread(r: Record<string, unknown>): ChatThread {
+  return {
+    id: r.id as string,
+    visitorId: r.visitor_id as string,
+    visitorName: r.visitor_name as string,
+    visitorEmail: r.visitor_email as string,
+    status: r.status as "open" | "closed",
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+    lastMessage: r.last_message as string,
+  };
+}
+
+function rowToMessage(r: Record<string, unknown>): ChatMessage {
+  return {
+    id: r.id as string,
+    threadId: r.thread_id as string,
+    role: r.role as "customer" | "admin" | "system",
+    senderName: r.sender_name as string,
+    text: r.text as string,
+    createdAt: r.created_at as string,
+  };
+}
+
 export async function chatSend(input: {
   threadId?: string;
   visitorId: string;
@@ -67,99 +69,120 @@ export async function chatSend(input: {
   text: string;
 }): Promise<{ thread: ChatThread; message: ChatMessage } | null> {
   const text = input.text.trim();
-  if (!text) return null;
+  if (!text || !supabase) return null;
 
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<{ thread: ChatThread; message: ChatMessage }>("chatSend", input);
-    if (res.ok && res.data) return res.data;
+  let threadId = input.threadId;
+
+  if (!threadId) {
+    const { data: existing } = await supabase
+      .from("chat_threads")
+      .select("*")
+      .eq("visitor_id", input.visitorId)
+      .eq("status", "open")
+      .maybeSingle();
+    threadId = existing?.id;
   }
 
-  const threads = readJson<ChatThread[]>(THREAD_KEY, []);
-  let thread = input.threadId ? threads.find((t) => t.id === input.threadId) : undefined;
+  let threadRow: Record<string, unknown> | null = null;
 
-  if (!thread) {
-    // Prefer an open thread for this visitor
-    thread = threads.find((t) => t.visitorId === input.visitorId && t.status === "open");
-  }
-
-  if (!thread) {
-    thread = {
-      id: genId("th"),
-      visitorId: input.visitorId,
-      visitorName: input.visitorName || "Guest",
-      visitorEmail: input.visitorEmail || "",
-      status: "open",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      lastMessage: text,
-    };
-    threads.unshift(thread);
+  if (threadId) {
+    const { data } = await supabase
+      .from("chat_threads")
+      .update({
+        visitor_name: input.visitorName || "Guest",
+        visitor_email: input.visitorEmail || "",
+        updated_at: new Date().toISOString(),
+        last_message: text,
+        status: "open",
+      })
+      .eq("id", threadId)
+      .select()
+      .single();
+    threadRow = data;
   } else {
-    thread = {
-      ...thread,
-      visitorName: input.visitorName || thread.visitorName,
-      visitorEmail: input.visitorEmail || thread.visitorEmail,
-      updatedAt: new Date().toISOString(),
-      lastMessage: text,
-      status: "open",
-    };
-    const idx = threads.findIndex((t) => t.id === thread!.id);
-    if (idx >= 0) threads[idx] = thread;
+    const { data } = await supabase
+      .from("chat_threads")
+      .insert({
+        id: genId("th"),
+        visitor_id: input.visitorId,
+        visitor_name: input.visitorName || "Guest",
+        visitor_email: input.visitorEmail || "",
+        status: "open",
+        last_message: text,
+      })
+      .select()
+      .single();
+    threadRow = data;
   }
 
-  const message: ChatMessage = {
-    id: genId("msg"),
-    threadId: thread.id,
-    role: input.role,
-    senderName: input.senderName,
-    text,
-    createdAt: new Date().toISOString(),
-  };
+  if (!threadRow) return null;
 
-  const messages = readJson<ChatMessage[]>(MSG_KEY, []);
-  messages.push(message);
-  writeJson(THREAD_KEY, threads.slice(0, 200));
-  writeJson(MSG_KEY, messages.slice(-2000));
+  const { data: msgData } = await supabase
+    .from("chat_messages")
+    .insert({
+      id: genId("msg"),
+      thread_id: threadRow.id,
+      role: input.role,
+      sender_name: input.senderName,
+      text,
+    })
+    .select()
+    .single();
 
-  return { thread, message };
+  if (!msgData) return null;
+
+  return { thread: rowToThread(threadRow), message: rowToMessage(msgData) };
 }
 
 export async function chatPoll(threadId: string, afterId?: string): Promise<ChatMessage[]> {
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<ChatMessage[]>("chatPoll", { threadId, afterId });
-    if (res.ok && res.data) return Array.isArray(res.data) ? res.data : [];
-  }
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("chat_messages")
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
 
-  const messages = readJson<ChatMessage[]>(MSG_KEY, []).filter((m) => m.threadId === threadId);
-  if (!afterId) return messages;
-  const idx = messages.findIndex((m) => m.id === afterId);
-  return idx >= 0 ? messages.slice(idx + 1) : messages;
+  const all = (data ?? []).map(rowToMessage);
+  if (!afterId) return all;
+  const idx = all.findIndex((m) => m.id === afterId);
+  return idx >= 0 ? all.slice(idx + 1) : all;
 }
 
 export async function chatListThreads(): Promise<ChatThread[]> {
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<ChatThread[]>("chatListThreads", {});
-    if (res.ok && res.data) return Array.isArray(res.data) ? res.data : [];
-  }
-  return readJson<ChatThread[]>(THREAD_KEY, []);
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("chat_threads")
+    .select("*")
+    .order("updated_at", { ascending: false });
+  return (data ?? []).map(rowToThread);
 }
 
 export async function chatClose(threadId: string): Promise<void> {
-  if (isAppScriptConfigured()) {
-    await appScriptRequest("chatClose", { threadId });
-  }
-  const threads = readJson<ChatThread[]>(THREAD_KEY, []);
-  const idx = threads.findIndex((t) => t.id === threadId);
-  if (idx >= 0) {
-    threads[idx] = { ...threads[idx], status: "closed", updatedAt: new Date().toISOString() };
-    writeJson(THREAD_KEY, threads);
-  }
+  if (!supabase) return;
+  await supabase
+    .from("chat_threads")
+    .update({ status: "closed", updated_at: new Date().toISOString() })
+    .eq("id", threadId);
 }
 
+/**
+ * Real Postgres realtime subscription — pushes updates instantly instead of
+ * polling. Replaces the old localStorage/BroadcastChannel approach.
+ */
 export function subscribeChat(cb: () => void): () => void {
-  const handler = (e: StorageEvent) => {
-    if (e.key === THREAD_KEY || e.key === MSG_KEY || e.key === CHANNEL) cb();
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel("chat-updates")
+    .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, () => cb())
+    .on("postgres_changes", { event: "*", schema: "public", table: "chat_threads" }, () => cb())
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
   };
-  window.addEventListener("storage", handler);
-  return () => window.removeEventListener("storage", handler);
+}
+
+export function isChatConfigured() {
+  return isSupabaseConfigured();
 }
