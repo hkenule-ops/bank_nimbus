@@ -172,8 +172,9 @@ export async function chatClose(threadId: string): Promise<void> {
 export function subscribeChat(cb: () => void): () => void {
   if (!supabase) return () => {};
   const client = supabase;
+  const channelName = `chat-updates-${Math.random().toString(36).slice(2)}`;
   const channel = client
-    .channel("chat-updates")
+    .channel(channelName)
     .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, () => cb())
     .on("postgres_changes", { event: "*", schema: "public", table: "chat_threads" }, () => cb())
     .subscribe();
