@@ -1,3 +1,3 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Placeholder } from "./admin.transactions";
+import { Placeholder } from "./-Placeholder";
 export const Route = createFileRoute("/admin/reports")({ component: () => <Placeholder title="Reports" desc="Generate customer, transaction, deposit, monthly and revenue reports." /> });
