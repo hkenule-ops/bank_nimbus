@@ -65,12 +65,12 @@ function LoginPage() {
 
   return (
     /* Strict h-screen with overflow-hidden disables page scrolling entirely */
-    <div className="relative h-screen w-full overflow-hidden gradient-hero flex flex-col justify-center items-center px-4">
+    <div className="relative min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden gradient-hero flex flex-col justify-center items-center px-3 py-6 sm:px-4">
       <div className="absolute inset-0 animate-gradient-shift opacity-60" />
       <AmbientBlobs />
 
       {/* Container with tight vertical gaps to ensure 100% fit */}
-      <div className="relative z-10 flex w-full max-w-md flex-col justify-center py-2">
+      <div className="relative z-10 flex w-full max-w-md flex-col justify-center py-2 safe-bottom">
         <Link
           to="/"
           className={`mb-3 inline-flex w-fit items-center gap-1.5 text-xs sm:text-sm text-muted-foreground transition-all duration-500 hover:text-foreground hover:-translate-x-0.5 ${
@@ -111,7 +111,7 @@ function LoginPage() {
                 value={id}
                 onChange={(e) => setId(e.target.value)}
                 placeholder="alex@demo.bangueherutage"
-                className="mt-1 h-9 sm:h-10 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
+                className="mt-1 h-11 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
             <div
@@ -125,7 +125,7 @@ function LoginPage() {
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1 h-9 sm:h-10 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
+                className="mt-1 h-11 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
 
@@ -136,7 +136,7 @@ function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className={`shimmer-sweep w-full h-9 sm:h-10 gradient-primary text-primary-foreground transition-transform duration-200 active:scale-95 ${
+                className={`shimmer-sweep w-full h-11 gradient-primary text-primary-foreground transition-transform duration-200 active:scale-95 ${
                   !loading ? "animate-cta-pulse animate-glow-pulse hover:scale-[1.02]" : ""
                 }`}
               >

@@ -1,11 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from "react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowRight, Shield, Wallet, CreditCard, Send, TrendingUp, Lock, Sparkles, CheckCircle2, Globe2, Smartphone, BarChart3, Quote } from "lucide-react";
+import {
+  ArrowRight,
+  Shield,
+  Wallet,
+  CreditCard,
+  Send,
+  TrendingUp,
+  Lock,
+  Sparkles,
+  CheckCircle2,
+  Globe2,
+  Smartphone,
+  BarChart3,
+  Quote,
+} from "lucide-react";
 import heroImg from "@/assets/hero.png";
 
 export const Route = createFileRoute("/")({
@@ -29,7 +43,7 @@ function useReveal<T extends HTMLElement>(threshold = 0.15) {
           obs.unobserve(el);
         }
       },
-      { threshold }
+      { threshold },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -41,23 +55,20 @@ function Reveal({
   children,
   className = "",
   delay = 0,
-  as: Tag = "div",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   delay?: number;
-  as?: keyof JSX.IntrinsicElements;
 }) {
   const { ref, visible } = useReveal<HTMLDivElement>();
-  const Component = Tag as any;
   return (
-    <Component
+    <div
       ref={ref}
       className={`reveal ${visible ? "reveal-visible" : ""} ${className}`}
       style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
     >
       {children}
-    </Component>
+    </div>
   );
 }
 
@@ -82,10 +93,11 @@ function FloatingBlobs() {
     return () => el.removeEventListener("mousemove", handleMove);
   }, []);
 
-  const parallax = (strength: number) => ({
-    "--px": `${(pos.x - 0.5) * strength}px`,
-    "--py": `${(pos.y - 0.5) * strength}px`,
-  } as React.CSSProperties);
+  const parallax = (strength: number): CSSProperties =>
+    ({
+      "--px": `${(pos.x - 0.5) * strength}px`,
+      "--py": `${(pos.y - 0.5) * strength}px`,
+    }) as CSSProperties;
 
   return (
     <div ref={wrapRef} className="absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -113,28 +125,40 @@ function FloatingBlobs() {
   );
 }
 
-/** Lightweight closing-CTA blobs (no parallax, just continuous float — keeps it cheap outside the hero) */
+/** Lightweight closing-CTA blobs (no parallax, just continuous float) */
 function AmbientBlobs() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute -left-16 top-10 h-72 w-72 animate-float-slow rounded-full bg-[#c9aa54]/20 blur-3xl" />
       <div className="absolute right-0 top-1/3 h-96 w-96 animate-float-slower rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute bottom-0 left-1/3 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/10 blur-3xl" style={{ animationDelay: "2s" }} />
+      <div
+        className="absolute bottom-0 left-1/3 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/10 blur-3xl"
+        style={{ animationDelay: "2s" }}
+      />
     </div>
   );
 }
 
 function MarqueeTicker() {
   const items = [
-    "0.00% account fees", "Instant transfers", "OTP verification", "Every action audit-logged",
-    "Virtual & physical cards", "Mobile-first design", "Foreign currency accounts", "Live market data",
+    "0.00% account fees",
+    "Instant transfers",
+    "OTP verification",
+    "Every action audit-logged",
+    "Virtual & physical cards",
+    "Mobile-first design",
+    "Foreign currency accounts",
+    "Live market data",
   ];
   const track = [...items, ...items];
   return (
     <div className="overflow-hidden border-y border-border/60 bg-muted/40 py-3">
       <div className="flex w-max animate-marquee gap-10">
         {track.map((t, i) => (
-          <span key={i} className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-muted-foreground">
+          <span
+            key={i}
+            className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-muted-foreground"
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-[#c9aa54]" />
             {t}
           </span>
@@ -151,7 +175,7 @@ function MovingButton({
   variant = "primary",
 }: {
   to: string;
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "primary" | "outline";
 }) {
   const base = "w-full justify-center transition-transform duration-200 active:scale-95 sm:w-auto";
@@ -176,9 +200,11 @@ function MovingButton({
   );
 }
 
-function IconBadge({ icon: Icon }: { icon: React.ElementType }) {
+function IconBadge({ icon: Icon }: { icon: ElementType }) {
   return (
-    <div className={`relative grid h-11 w-11 place-items-center rounded-xl ${GOLD_PRIMARY} shadow-elevated transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
+    <div
+      className={`relative grid h-11 w-11 place-items-center rounded-xl ${GOLD_PRIMARY} shadow-elevated transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+    >
       <span className="absolute inset-0 animate-ping rounded-xl bg-[#c9aa54]/40" />
       <Icon className="relative h-5 w-5" />
     </div>
@@ -189,7 +215,7 @@ function IconBadge({ icon: Icon }: { icon: React.ElementType }) {
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-background">
       <SiteHeader />
       <Hero />
       <MarqueeTicker />
@@ -210,7 +236,7 @@ function Hero() {
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 gradient-hero opacity-70 animate-gradient-shift" />
       <FloatingBlobs />
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-3 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:py-28 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-3 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28">
         <div className="flex flex-col justify-center">
           <Reveal>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
@@ -220,18 +246,23 @@ function Hero() {
           </Reveal>
           <Reveal delay={100}>
             <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
-              Banking, <span className="text-gradient bg-[length:200%_auto] animate-gradient-shift">reimagined</span> for the modern web.
+              Banking,{" "}
+              <span className="text-gradient bg-[length:200%_auto] animate-gradient-shift">reimagined</span> for
+              the modern web.
             </h1>
           </Reveal>
           <Reveal delay={200}>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin console, transfers, cards and reporting — built to look and feel like the world's best fintechs.
+            <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+              Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin
+              console, transfers, cards and reporting — built to look and feel like the world&apos;s best fintechs.
             </p>
           </Reveal>
           <Reveal delay={300}>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <MovingButton to="/register">Open an account</MovingButton>
-              <MovingButton to="/login" variant="outline">Sign in</MovingButton>
+              <MovingButton to="/login" variant="outline">
+                Sign in
+              </MovingButton>
             </div>
           </Reveal>
           <Reveal delay={400}>
@@ -252,8 +283,14 @@ function Hero() {
           </Reveal>
         </div>
         <Reveal delay={150} className="relative">
-          <div className="glass-card rounded-3xl p-3 transition-transform duration-500 ease-out hover:-translate-y-1 hover:shadow-elevated">
-            <img src={heroImg} alt="Bangue Herutage Bank digital banking" width={1600} height={1000} className="w-full rounded-2xl" />
+          <div className="glass-card rounded-2xl p-2 transition-transform duration-500 ease-out hover:-translate-y-1 hover:shadow-elevated sm:rounded-3xl sm:p-3">
+            <img
+              src={heroImg}
+              alt="Bangue Herutage Bank digital banking"
+              width={1600}
+              height={1000}
+              className="h-auto w-full rounded-xl sm:rounded-2xl"
+            />
           </div>
           <FloatingCard className="absolute -bottom-6 -left-6 hidden animate-float sm:block" />
         </Reveal>
@@ -279,22 +316,50 @@ function FloatingCard({ className = "" }: { className?: string }) {
 
 function Services() {
   const items = [
-    { icon: Wallet, title: "Everyday accounts", body: "Savings, current, joint, student, business, and premium accounts — created instantly." },
-    { icon: Send, title: "Instant transfers", body: "Simulated peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates." },
-    { icon: CreditCard, title: "Cards on demand", body: "Request debit, virtual, or replacement cards. Freeze, unfreeze and block in one tap." },
-    { icon: BarChart3, title: "Insights & reports", body: "Beautiful monthly summaries, revenue charts and export to PDF or CSV." },
-    { icon: Globe2, title: "Global by design", body: "Foreign currency accounts and IBAN-style numbering for a realistic experience." },
-    { icon: Smartphone, title: "Mobile-first", body: "Every screen is crafted to feel great on your phone, tablet and desktop." },
+    {
+      icon: Wallet,
+      title: "Everyday accounts",
+      body: "Savings, current, joint, student, business, and premium accounts — created instantly.",
+    },
+    {
+      icon: Send,
+      title: "Instant transfers",
+      body: "Simulated peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates.",
+    },
+    {
+      icon: CreditCard,
+      title: "Cards on demand",
+      body: "Request debit, virtual, or replacement cards. Freeze, unfreeze and block in one tap.",
+    },
+    {
+      icon: BarChart3,
+      title: "Insights & reports",
+      body: "Beautiful monthly summaries, revenue charts and export to PDF or CSV.",
+    },
+    {
+      icon: Globe2,
+      title: "Global by design",
+      body: "Foreign currency accounts and IBAN-style numbering for a realistic experience.",
+    },
+    {
+      icon: Smartphone,
+      title: "Mobile-first",
+      body: "Every screen is crafted to feel great on your phone, tablet and desktop.",
+    },
   ];
   return (
-    <section id="services" className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
+    <section id="services" className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
       <Reveal>
-        <SectionHeading eyebrow="Services" title="Everything you'd expect from a modern bank" subtitle="A complete set of retail banking features, faithfully simulated end-to-end." />
+        <SectionHeading
+          eyebrow="Services"
+          title="Everything you'd expect from a modern bank"
+          subtitle="A complete set of retail banking features, faithfully simulated end-to-end."
+        />
       </Reveal>
-      <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         {items.map((it, i) => (
           <Reveal key={it.title} delay={i * 90}>
-            <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated">
+            <Card className="group relative h-full overflow-hidden border-border/60 p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated sm:p-6">
               <IconBadge icon={it.icon} />
               <h3 className="mt-5 text-lg font-semibold">{it.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{it.body}</p>
@@ -323,41 +388,54 @@ function Features() {
 
   return (
     <section className="border-y border-border/60 bg-muted/30">
-      <div className="mx-auto grid max-w-7xl gap-12 px-3 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-3 py-16 sm:gap-12 sm:px-6 sm:py-24 lg:grid-cols-2 lg:px-8">
         <div>
           <Reveal>
-            <SectionHeading eyebrow="Features" title="A dashboard people actually enjoy using." subtitle="Clean information hierarchy, purposeful motion, and the metrics that matter — front and center." align="left" />
+            <SectionHeading
+              eyebrow="Features"
+              title="A dashboard people actually enjoy using."
+              subtitle="Clean information hierarchy, purposeful motion, and the metrics that matter — front and center."
+              align="left"
+            />
           </Reveal>
           <ul className="mt-8 space-y-4">
-            {["Balance & spending at a glance", "One-click transfers with beneficiaries", "Card controls: freeze, unfreeze, virtual", "Notifications & security alerts", "Profile completion & verification status"].map((s, i) => (
-              <Reveal key={s} delay={i * 90} as="li" className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 text-success" />
+            {[
+              "Balance & spending at a glance",
+              "One-click transfers with beneficiaries",
+              "Card controls: freeze, unfreeze, virtual",
+              "Notifications & security alerts",
+              "Profile completion & verification status",
+            ].map((s, i) => (
+              <Reveal key={s} delay={i * 90} className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
                 <span className="text-sm">{s}</span>
               </Reveal>
             ))}
           </ul>
         </div>
-        <Reveal delay={150} className="relative">
-          <div className="glass-card rounded-3xl p-6 transition-shadow duration-300 hover:shadow-elevated">
-            <div className="flex items-center justify-between">
-              <div>
+        <Reveal delay={150} className="relative min-w-0">
+          <div className="glass-card rounded-2xl p-4 transition-shadow duration-300 hover:shadow-elevated sm:rounded-3xl sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">SIX Swiss Exchange</div>
-                <div className="text-lg font-semibold">Live Market Overview</div>
+                <div className="truncate text-base font-semibold sm:text-lg">Live Market Overview</div>
               </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs text-white">
+              <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs text-white">
                 <span className="h-1.5 w-1.5 animate-ping rounded-full bg-white" />
                 Live
               </div>
             </div>
 
             <div className="mt-6">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Currency exchange · CHF base</div>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Currency exchange · CHF base
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
                 {fxRates.map((f, i) => (
                   <Reveal key={f.pair} delay={200 + i * 70}>
                     <div className="rounded-xl bg-background/60 p-3 transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.03]">
                       <div className="text-[10px] uppercase text-muted-foreground">{f.pair}</div>
-                      <div className="mt-1 flex items-center justify-between">
+                      <div className="mt-1 flex items-center justify-between gap-1">
                         <span className="text-sm font-semibold">{f.rate}</span>
                         <span className={`text-[10px] font-medium ${f.up ? "text-success" : "text-destructive"}`}>
                           {f.change}
@@ -370,16 +448,18 @@ function Features() {
             </div>
 
             <div className="mt-6">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Swiss equities</div>
-              <div className="mt-3 space-y-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Swiss equities
+              </div>
+              <div className="mt-3 space-y-2 sm:space-y-3">
                 {stocks.map((s, i) => (
                   <Reveal key={s.ticker} delay={450 + i * 70}>
-                    <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/50 p-3 text-sm transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02]">
-                      <div>
+                    <div className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/50 p-3 text-sm transition-transform duration-200 hover:-translate-y-0.5 hover:scale-[1.02]">
+                      <div className="min-w-0">
                         <span className="font-medium">{s.ticker}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{s.name}</span>
+                        <span className="ml-2 hidden text-xs text-muted-foreground sm:inline">{s.name}</span>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         <div className="font-medium">{s.price}</div>
                         <div className={`text-[10px] ${s.up ? "text-success" : "text-destructive"}`}>{s.change}</div>
                       </div>
@@ -397,18 +477,30 @@ function Features() {
 
 function Security() {
   return (
-    <section className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
+    <section className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
       <Reveal>
-        <SectionHeading eyebrow="Security" title="Built with a security-first mindset." subtitle="OTP verification, session controls, masked identity fields, and audit trails — because trust is everything." />
+        <SectionHeading
+          eyebrow="Security"
+          title="Built with a security-first mindset."
+          subtitle="OTP verification, session controls, masked identity fields, and audit trails — because trust is everything."
+        />
       </Reveal>
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
+      <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-3">
         {[
-          { icon: Shield, t: "OTP verification", b: "Six-digit codes for registration, new devices, and password reset." },
+          {
+            icon: Shield,
+            t: "OTP verification",
+            b: "Six-digit codes for registration, new devices, and password reset.",
+          },
           { icon: Lock, t: "Hashed passwords", b: "Passwords are never stored in plain text — always hashed." },
-          { icon: BarChart3, t: "Full audit logs", b: "Every admin action is traceable in the audit log for accountability." },
+          {
+            icon: BarChart3,
+            t: "Full audit logs",
+            b: "Every admin action is traceable in the audit log for accountability.",
+          },
         ].map((it, i) => (
           <Reveal key={it.t} delay={i * 100}>
-            <Card className="group h-full p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated">
+            <Card className="group h-full p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-elevated sm:p-6">
               <IconBadge icon={it.icon} />
               <h3 className="mt-5 font-semibold">{it.t}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{it.b}</p>
@@ -422,22 +514,25 @@ function Security() {
 
 function Testimonials() {
   const t = [
-    { q: "The most polished banking demo I've handed to a client. It sold the project in five minutes.", a: "Priya S., Product Designer" },
+    {
+      q: "The most polished banking demo I've handed to a client. It sold the project in five minutes.",
+      a: "Priya S., Product Designer",
+    },
     { q: "Faster than our own staging environment. It just feels premium.", a: "Marcus L., Fintech Founder" },
     { q: "The admin console is a genuine joy — everything in the right place.", a: "Dana O., Operations Lead" },
   ];
   return (
     <section className="border-y border-border/60 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
         <Reveal>
           <SectionHeading eyebrow="Testimonials" title="Loved by teams shipping fintech." />
         </Reveal>
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-3">
           {t.map((x, i) => (
             <Reveal key={x.a} delay={i * 110}>
-              <Card className="relative h-full overflow-hidden p-6 transition-transform duration-300 hover:-translate-y-1.5 hover:shadow-elevated">
+              <Card className="relative h-full overflow-hidden p-5 transition-transform duration-300 hover:-translate-y-1.5 hover:shadow-elevated sm:p-6">
                 <Quote className="absolute -right-2 -top-2 h-14 w-14 animate-spin-slow text-[#c9aa54]/10" />
-                <p className="relative text-sm leading-relaxed">"{x.q}"</p>
+                <p className="relative text-sm leading-relaxed">&ldquo;{x.q}&rdquo;</p>
                 <p className="relative mt-5 text-xs font-medium text-muted-foreground">— {x.a}</p>
               </Card>
             </Reveal>
@@ -450,13 +545,25 @@ function Testimonials() {
 
 function FAQ() {
   const items = [
-    { q: "Is this real banking?", a: "No. Bangue Herutage Bank is an educational and demonstration platform. It does not move real money and is not connected to any bank or card network." },
-    { q: "Can I use it as a starting point?", a: "Yes — it's designed as a reference implementation for teams building or prototyping banking experiences." },
-    { q: "How do I access the admin portal?", a: "There's a discreet Admin Login link in the footer. Use admin / admin for the demo." },
-    { q: "Are my details safe?", a: "Identity fields entered during registration are simulated and masked throughout the UI. No real data should be entered." },
+    {
+      q: "Is this real banking?",
+      a: "No. Bangue Herutage Bank is an educational and demonstration platform. It does not move real money and is not connected to any bank or card network.",
+    },
+    {
+      q: "Can I use it as a starting point?",
+      a: "Yes — it's designed as a reference implementation for teams building or prototyping banking experiences.",
+    },
+    {
+      q: "How do I access the admin portal?",
+      a: "There's a discreet Admin Login link in the footer. Use admin / admin for the demo.",
+    },
+    {
+      q: "Are my details safe?",
+      a: "Identity fields entered during registration are simulated and masked throughout the UI. No real data should be entered.",
+    },
   ];
   return (
-    <section className="mx-auto max-w-4xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
+    <section className="mx-auto max-w-4xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
       <Reveal>
         <SectionHeading eyebrow="FAQ" title="Answers to common questions." />
       </Reveal>
@@ -477,9 +584,13 @@ function FAQ() {
 function About() {
   return (
     <section id="about" className="border-t border-border/60 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
         <Reveal>
-          <SectionHeading eyebrow="About" title="A reference banking experience — for teams that care about craft." subtitle="Bangue Herutage Bank was built to demonstrate what a delightful, security-conscious digital bank can look like on the modern web." />
+          <SectionHeading
+            eyebrow="About"
+            title="A reference banking experience — for teams that care about craft."
+            subtitle="Bangue Herutage Bank was built to demonstrate what a delightful, security-conscious digital bank can look like on the modern web."
+          />
         </Reveal>
       </div>
     </section>
@@ -488,27 +599,41 @@ function About() {
 
 function Contact() {
   return (
-    <section id="contact" className="mx-auto max-w-7xl px-3 py-20 sm:px-6 sm:py-24 lg:px-8">
-      <Reveal className="relative overflow-hidden rounded-3xl px-4 py-12 text-center sm:px-8 sm:py-16">
+    <section id="contact" className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
+      <Reveal className="relative overflow-hidden rounded-2xl px-4 py-12 text-center sm:rounded-3xl sm:px-8 sm:py-16">
         <div className="glass-card absolute inset-0 -z-10 transition-shadow duration-300" />
         <AmbientBlobs />
-        <h2 className="text-3xl font-bold sm:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">Open a simulated account in seconds and experience the full customer portal end-to-end.</p>
+        <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+          Open a simulated account in seconds and experience the full customer portal end-to-end.
+        </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
           <MovingButton to="/register">Get started</MovingButton>
-          <MovingButton to="/login" variant="outline">I have an account</MovingButton>
+          <MovingButton to="/login" variant="outline">
+            I have an account
+          </MovingButton>
         </div>
       </Reveal>
     </section>
   );
 }
 
-function SectionHeading({ eyebrow, title, subtitle, align = "center" }: { eyebrow: string; title: string; subtitle?: string; align?: "center" | "left" }) {
+function SectionHeading({
+  eyebrow,
+  title,
+  subtitle,
+  align = "center",
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  align?: "center" | "left";
+}) {
   return (
     <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
       <div className="text-xs font-semibold uppercase tracking-wider text-primary">{eyebrow}</div>
-      <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
-      {subtitle && <p className="mt-4 text-muted-foreground">{subtitle}</p>}
+      <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">{title}</h2>
+      {subtitle && <p className="mt-4 text-sm text-muted-foreground sm:text-base">{subtitle}</p>}
     </div>
   );
 }

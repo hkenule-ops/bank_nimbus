@@ -58,7 +58,7 @@ export function SiteHeader() {
 
         {/* Mobile Menu Button */}
         <button
-          className="ml-auto md:hidden"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-lg touch-manipulation md:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
         >
@@ -79,21 +79,20 @@ export function SiteHeader() {
                 key={n.to}
                 to={n.to}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2 text-sm hover:bg-muted"
+                className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium hover:bg-muted active:bg-muted touch-manipulation"
               >
                 {n.label}
               </Link>
             ))}
 
-            <div className="mt-2 flex gap-2">
-              <Button asChild variant="outline" size="sm" className="flex-1">
+            <div className="mt-3 flex gap-2">
+              <Button asChild variant="outline" className="h-11 flex-1">
                 <Link to="/login">Sign in</Link>
               </Button>
 
               <Button
                 asChild
-                size="sm"
-                className="flex-1 bg-[#c9aa54] text-primary-foreground hover:opacity-95"
+                className="h-11 flex-1 bg-[#c9aa54] text-primary-foreground hover:opacity-95"
               >
                 <Link to="/register">Open account</Link>
               </Button>

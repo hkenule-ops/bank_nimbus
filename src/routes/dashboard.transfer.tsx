@@ -240,7 +240,7 @@ function TransferPage() {
 
   if (step === "success" && completed) {
     return (
-      <div className="mx-auto max-w-md space-y-6 pb-24 md:pb-8">
+      <div className="mx-auto max-w-md space-y-6 pb-2 md:pb-0">
         <Card className="overflow-hidden p-8 text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-success/15 text-success">
             <CheckCircle2 className="h-9 w-9" />
@@ -283,9 +283,9 @@ function TransferPage() {
 
   if (step === "otp" && draft && session) {
     return (
-      <div className="mx-auto max-w-md space-y-6 pb-24 md:pb-8">
+      <div className="mx-auto max-w-md space-y-6 pb-2 md:pb-0">
         <div>
-          <h1 className="text-2xl font-bold">Verify it's you</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Verify it's you</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Security layer {otpStage} of {TOTAL_OTP_STAGES}. Enter the 6-digit code issued by bank authorization for this transfer.
           </p>
@@ -394,7 +394,7 @@ function TransferPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-24 md:pb-8">
+    <div className="mx-auto max-w-2xl space-y-6 pb-2 md:pb-0">
       <div>
         <h1 className="text-2xl font-bold">Send money</h1>
         <p className="mt-1 text-sm text-muted-foreground">

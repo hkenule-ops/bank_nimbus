@@ -17,9 +17,9 @@ function DashboardHome() {
   if (!user) return null;
 
   return (
-    <div className="space-y-8 pb-24 md:pb-8">
+    <div className="space-y-5 sm:space-y-8">
       <section>
-        <div className="glass-card overflow-hidden rounded-3xl p-8">
+        <div className="glass-card overflow-hidden rounded-2xl p-5 sm:rounded-3xl sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <button
               type="button"
@@ -28,22 +28,22 @@ function DashboardHome() {
               aria-label={`Switch balance to ${currency === "USD" ? "Swiss francs" : "US dollars"}`}
             >
               <div className="text-sm text-muted-foreground">Available balance</div>
-              <div className="mt-1 text-4xl font-bold transition-opacity group-hover:opacity-70 sm:text-5xl">
+              <div className="mt-1 text-3xl font-bold transition-opacity group-hover:opacity-70 sm:text-5xl">
                 {format(user.balance)}
               </div>
               <div className="mt-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-4">
                 Tap to view in {currency === "USD" ? "CHF" : "USD"}
               </div>
-              <div className="mt-3 flex items-center gap-3 text-sm">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:gap-3 sm:text-sm">
                 <Badge variant="secondary" className="rounded-full">{user.accountType}</Badge>
                 <span className="text-muted-foreground">•••• {user.accountNumber.slice(-4)}</span>
                 <span className="flex items-center gap-1 text-success"><TrendingUp className="h-3 w-3" /> +2.4%</span>
               </div>
             </button>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild className="gradient-primary text-primary-foreground shadow-elevated"><Link to="/dashboard/transfer"><Send className="mr-2 h-4 w-4" /> Transfer</Link></Button>
-              <Button variant="outline" asChild><Link to="/dashboard/cards"><CreditCard className="mr-2 h-4 w-4" /> Cards</Link></Button>
-              <Button variant="outline" asChild><Link to="/dashboard/beneficiaries"><Users className="mr-2 h-4 w-4" /> Beneficiaries</Link></Button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+              <Button asChild className="h-11 w-full gradient-primary text-primary-foreground shadow-elevated sm:w-auto"><Link to="/dashboard/transfer"><Send className="mr-2 h-4 w-4" /> Transfer</Link></Button>
+              <Button variant="outline" asChild className="h-11 w-full sm:w-auto"><Link to="/dashboard/cards"><CreditCard className="mr-2 h-4 w-4" /> Cards</Link></Button>
+              <Button variant="outline" asChild className="h-11 w-full sm:w-auto"><Link to="/dashboard/beneficiaries"><Users className="mr-2 h-4 w-4" /> Beneficiaries</Link></Button>
             </div>
           </div>
         </div>
@@ -55,8 +55,8 @@ function DashboardHome() {
         <StatCard title="Status" value={user.status} sub="Fully verified" success />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <Card className="p-6 lg:col-span-2">
+      <section className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+        <Card className="p-4 sm:p-6 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-semibold">Recent transactions</h3>
             <Link to="/dashboard/transactions" className="text-sm text-primary hover:underline">View all</Link>
@@ -81,8 +81,8 @@ function DashboardHome() {
           </ul>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="p-6">
+        <div className="space-y-4 sm:space-y-6">
+          <Card className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">Profile completion</h3>
@@ -92,7 +92,7 @@ function DashboardHome() {
             <Button variant="outline" size="sm" className="mt-4 w-full" asChild><Link to="/dashboard/profile">Complete profile</Link></Button>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <h3 className="font-semibold">Quick actions</h3>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {[
@@ -115,7 +115,7 @@ function DashboardHome() {
 
 function StatCard({ title, value, sub, success }: { title: string; value: string; sub?: string; success?: boolean }) {
   return (
-    <Card className="p-5">
+    <Card className="p-4 sm:p-5">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{title}</div>
       <div className={`mt-1 truncate text-lg font-semibold ${success ? "text-success" : ""}`}>{value}</div>
       {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}

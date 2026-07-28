@@ -30,10 +30,10 @@ function BenPage() {
   };
 
   return (
-    <div className="grid gap-6 pb-24 lg:grid-cols-3 md:pb-8">
+    <div className="grid gap-6 pb-2 lg:grid-cols-3 md:pb-8">
       <div className="lg:col-span-2 space-y-4">
         <div>
-          <h1 className="text-2xl font-bold">Beneficiaries</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Beneficiaries</h1>
           <p className="mt-1 text-sm text-muted-foreground">Saved recipients for faster transfers.</p>
         </div>
         <Card className="divide-y divide-border">

@@ -477,18 +477,18 @@ function RegisterPage() {
   const isNonResident = form.residesInSwitzerland === "No";
 
   return (
-    <div className="relative min-h-screen gradient-hero flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-[100dvh] gradient-hero flex items-start justify-center overflow-x-hidden overflow-y-auto sm:items-center">
       <div className="absolute inset-0 animate-gradient-shift opacity-50" />
       <AmbientBlobs />
 
-      <div className="relative mx-auto w-full max-w-2xl px-3 py-8 sm:px-4 sm:py-12">
+      <div className="relative mx-auto w-full max-w-2xl px-3 py-6 sm:px-4 sm:py-12">
         <div className="mb-8 flex items-center justify-between animate-step-in">
           <Logo className="animate-float" />
           <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Back to home</Link>
         </div>
 
-        <Card className={cn("glass-card p-4 transition-transform duration-300 sm:p-8", shake && "animate-shake")}>
-          <div className="mb-6 flex items-center justify-center gap-1.5 sm:gap-2">
+        <Card className={cn("glass-card p-3 transition-transform duration-300 sm:p-8", shake && "animate-shake")}>
+          <div className="mb-5 flex items-center justify-center gap-1 overflow-x-auto sm:mb-6 sm:gap-2">
             {steps.map((s, i) => (
               <div key={s} className="flex items-center gap-1.5 sm:gap-2">
                 <div
@@ -653,15 +653,15 @@ function RegisterPage() {
             </div>
           </div>
 
-          <div className="mt-8 flex items-center justify-between">
-            <Button variant="ghost" onClick={back} disabled={step === 0} className="transition-transform duration-200 hover:-translate-x-0.5 disabled:hover:translate-x-0">
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="ghost" onClick={back} disabled={step === 0} className="h-11 w-full justify-center transition-transform duration-200 hover:-translate-x-0.5 disabled:hover:translate-x-0 sm:w-auto sm:justify-start">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             <Button
               onClick={next}
               disabled={(attempted && !canNext()) || otpVerifying}
               className={cn(
-                "shimmer-sweep gradient-primary text-primary-foreground transition-transform duration-200 active:scale-95",
+                "shimmer-sweep h-11 w-full justify-center gradient-primary text-primary-foreground transition-transform duration-200 active:scale-95 sm:w-auto",
                 !otpVerifying && "hover:scale-[1.03]"
               )}
             >

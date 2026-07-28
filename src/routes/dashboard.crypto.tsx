@@ -67,9 +67,9 @@ function CryptoPage() {
   };
 
   return (
-    <div className="space-y-6 pb-24 md:pb-8">
+    <div className="space-y-6 pb-2 md:pb-0">
       <div>
-        <h1 className="text-2xl font-bold">Crypto</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Crypto</h1>
         <p className="mt-1 text-sm text-muted-foreground">Buy, sell, and track digital assets — simulated market prices.</p>
       </div>
 
