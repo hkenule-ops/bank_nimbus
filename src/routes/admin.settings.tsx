@@ -80,10 +80,10 @@ function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Settings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "Bank identity and admin credentials stored in the Config sheet."

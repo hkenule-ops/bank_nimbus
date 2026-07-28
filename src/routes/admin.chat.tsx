@@ -124,12 +124,15 @@ function AdminChatPage() {
   const openThreads = threads.filter((t) => t.status === "open");
   const closedThreads = threads.filter((t) => t.status === "closed");
 
+  const showThreadList = !activeId;
+  const showConversation = Boolean(activeId);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Live chat</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold sm:text-2xl">Live chat</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Reply to customer conversations.
             {!isChatConfigured() && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
@@ -138,14 +141,14 @@ function AdminChatPage() {
             )}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void loadThreads()}>
+        <Button variant="outline" size="sm" className="h-10" onClick={() => void loadThreads()}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
-      <div className="grid min-h-[520px] gap-4 lg:grid-cols-[280px_1fr]">
-        <Card className="flex flex-col overflow-hidden p-0">
+      <div className="grid min-h-[min(70dvh,520px)] gap-4 lg:grid-cols-[280px_1fr]">
+        <Card className={cn("flex flex-col overflow-hidden p-0", showConversation && "hidden lg:flex", showThreadList && "flex")}>
           <div className="border-b border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Conversations
           </div>
@@ -161,7 +164,7 @@ function AdminChatPage() {
                 type="button"
                 onClick={() => setActiveId(t.id)}
                 className={cn(
-                  "w-full border-b border-border/60 px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                  "w-full min-h-[3.25rem] border-b border-border/60 px-4 py-3 text-left transition-colors hover:bg-muted/50 touch-manipulation",
                   activeId === t.id && "bg-primary/10",
                 )}
               >
@@ -186,7 +189,7 @@ function AdminChatPage() {
           </div>
         </Card>
 
-        <Card className="flex flex-col overflow-hidden p-0">
+        <Card className={cn("flex flex-col overflow-hidden p-0", !active && "hidden lg:flex")}>
           {!active ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-10 text-muted-foreground">
               <MessageCircle className="h-10 w-10 opacity-40" />
@@ -194,15 +197,23 @@ function AdminChatPage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-                <div className="min-w-0">
+              <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3 sm:gap-3 sm:px-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 shrink-0 px-2 lg:hidden"
+                  onClick={() => setActiveId(null)}
+                >
+                  ← Back
+                </Button>
+                <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{active.visitorName}</div>
                   <div className="truncate text-xs text-muted-foreground">
                     {active.visitorEmail || active.visitorId}
                   </div>
                 </div>
                 {active.status === "open" && (
-                  <Button size="sm" variant="outline" onClick={() => void closeThread()}>
+                  <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => void closeThread()}>
                     <XCircle className="mr-1 h-3.5 w-3.5" /> Close
                   </Button>
                 )}
@@ -231,7 +242,7 @@ function AdminChatPage() {
 
               {active.status === "open" && (
                 <form
-                  className="flex gap-2 border-t border-border p-3"
+                  className="flex gap-2 border-t border-border p-2 sm:p-3"
                   onSubmit={(e) => {
                     e.preventDefault();
                     void send();
@@ -240,11 +251,11 @@ function AdminChatPage() {
                   <Input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Reply as support agent…"
-                    className="flex-1"
+                    placeholder="Reply as support…"
+                    className="h-11 flex-1"
                     disabled={sending}
                   />
-                  <Button type="submit" className="gradient-primary text-primary-foreground" disabled={sending || !text.trim()}>
+                  <Button type="submit" className="h-11 w-11 shrink-0 gradient-primary p-0 text-primary-foreground" disabled={sending || !text.trim()}>
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>

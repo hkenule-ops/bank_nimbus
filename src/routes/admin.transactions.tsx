@@ -36,10 +36,10 @@ function AdminTransactionsPage() {
   }, [load]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Transactions</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Transactions</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "All ledger entries from Google Sheets."
@@ -62,8 +62,8 @@ function AdminTransactionsPage() {
         ) : (
           <ul className="divide-y divide-border">
             {rows.map((t) => (
-              <li key={t.id} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
+              <li key={t.id} className="flex items-start justify-between gap-3 px-3 py-3.5 sm:items-center sm:px-5 sm:py-4">
+                <div className="flex min-w-0 items-start gap-3 sm:items-center">
                   <div
                     className={`grid h-10 w-10 place-items-center rounded-full ${
                       t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"

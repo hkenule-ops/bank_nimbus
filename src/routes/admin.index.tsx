@@ -96,10 +96,10 @@ function AdminHome() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Overview</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Overview</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "Live statistics from Google Sheets."

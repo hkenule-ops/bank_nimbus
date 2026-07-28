@@ -61,10 +61,10 @@ function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Notifications</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Broadcast a system announcement stored in the Config sheet (`system_message`).
           </p>

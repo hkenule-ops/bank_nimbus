@@ -73,10 +73,10 @@ function AdminOtpPage() {
   const recent = sessions.filter((s) => s.status !== "pending").slice(0, 15);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Transfer OTP authorization</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Transfer OTP authorization</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Issue 6-digit codes for each of the {TOTAL_OTP_STAGES} security layers on customer transfers.
             {!isAppScriptConfigured() && (
@@ -107,7 +107,7 @@ function AdminOtpPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-2xl font-bold tracking-[0.3em] text-primary">{lastCode.code}</span>
+              <span className="font-mono text-xl font-bold tracking-[0.2em] text-primary sm:text-2xl sm:tracking-[0.3em]">{lastCode.code}</span>
               <Button size="sm" variant="outline" onClick={() => copyCode(lastCode.code)}>
                 <Copy className="h-4 w-4" />
               </Button>
@@ -207,7 +207,7 @@ function SessionCard({
         </div>
       </div>
 
-      <div className="grid gap-3 p-5 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:gap-3 sm:p-5 lg:grid-cols-5">
         {Array.from({ length: TOTAL_OTP_STAGES }).map((_, i) => {
           const stage = i + 1;
           const code = s.codes[i];

@@ -61,10 +61,10 @@ function ReportsPage() {
   }, [customers, transactions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Reports</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Snapshot of customers, balances, and ledger activity from Google Sheets.
           </p>
