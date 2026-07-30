@@ -72,6 +72,23 @@ export interface Transaction {
   balance: number;
   status: "Completed" | "Pending" | "Failed";
   customerId?: string;
+  /** Optional counterparty / reference shown in admin forms */
+  reference?: string;
+  counterparty?: string;
+  category?: string;
+  notes?: string;
+}
+
+/** Newest first — keeps customer and admin lists ordered by transaction date. */
+export function sortTransactionsByDate(txs: Transaction[]): Transaction[] {
+  return [...txs].sort((a, b) => {
+    const ta = new Date(a.date).getTime();
+    const tb = new Date(b.date).getTime();
+    if (Number.isNaN(ta) && Number.isNaN(tb)) return 0;
+    if (Number.isNaN(ta)) return 1;
+    if (Number.isNaN(tb)) return -1;
+    return tb - ta;
+  });
 }
 
 interface AuthState {
@@ -205,8 +222,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isAppScriptConfigured()) return;
     const res = await appScriptRequest<Transaction[]>("getTransactions", { customerId });
     if (res.ok && Array.isArray(res.data)) {
-      setTransactions(res.data);
-      localStorage.setItem(TX_KEY, JSON.stringify(res.data));
+      const sorted = sortTransactionsByDate(res.data);
+      setTransactions(sorted);
+      localStorage.setItem(TX_KEY, JSON.stringify(sorted));
     }
   };
 
@@ -222,8 +240,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const customer = stripPassword(response.data);
         persist(customer, false);
         if (Array.isArray(response.data.transactions)) {
-          setTransactions(response.data.transactions);
-          localStorage.setItem(TX_KEY, JSON.stringify(response.data.transactions));
+          const sorted = sortTransactionsByDate(response.data.transactions);
+          setTransactions(sorted);
+          localStorage.setItem(TX_KEY, JSON.stringify(sorted));
         } else {
           await loadTx(customer.customerId);
         }
@@ -237,8 +256,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: identifier.includes("@") ? "alex.morgan" : identifier,
     });
     persist(u, false);
-    setTransactions(seedTx);
-    localStorage.setItem(TX_KEY, JSON.stringify(seedTx));
+    const sortedSeed = sortTransactionsByDate(seedTx);
+    setTransactions(sortedSeed);
+    localStorage.setItem(TX_KEY, JSON.stringify(sortedSeed));
     return true;
   };
 
@@ -303,10 +323,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const updated = stripPassword(response.data.user);
         persist(updated, isAdmin);
         if (Array.isArray(response.data.transactions)) {
-          setTransactions(response.data.transactions);
-          localStorage.setItem(TX_KEY, JSON.stringify(response.data.transactions));
+          const sorted = sortTransactionsByDate(response.data.transactions);
+          setTransactions(sorted);
+          localStorage.setItem(TX_KEY, JSON.stringify(sorted));
         } else if (response.data.transaction) {
-          const newTx = [response.data.transaction, ...transactions];
+          const newTx = sortTransactionsByDate([response.data.transaction, ...transactions]);
           setTransactions(newTx);
           localStorage.setItem(TX_KEY, JSON.stringify(newTx));
         }
@@ -327,7 +348,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: "Completed",
       customerId: user.customerId,
     };
-    const newTx = [tx, ...transactions];
+    const newTx = sortTransactionsByDate([tx, ...transactions]);
     setTransactions(newTx);
     localStorage.setItem(TX_KEY, JSON.stringify(newTx));
     persist(updated, isAdmin);

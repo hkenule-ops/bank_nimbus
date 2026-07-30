@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "@/lib/mock-auth";
+import { useMemo } from "react";
+import { useAuth, sortTransactionsByDate } from "@/lib/mock-auth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/lib/currency";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/dashboard/transactions")({
 function TxPage() {
   const { transactions } = useAuth();
   const { currency, toggleCurrency, format } = useCurrency();
+  const ordered = useMemo(() => sortTransactionsByDate(transactions), [transactions]);
 
   return (
     <div className="space-y-6 pb-2 md:pb-0">
@@ -31,11 +33,19 @@ function TxPage() {
       </div>
       <Card className="overflow-hidden">
         <ul className="divide-y divide-border">
-          {transactions.map((t) => (
+          {ordered.map((t) => (
             <li key={t.id} className="flex items-center justify-between px-5 py-4">
               <div className="flex items-center gap-3">
-                <div className={`grid h-10 w-10 place-items-center rounded-full ${t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                  {t.type === "Credit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                <div
+                  className={`grid h-10 w-10 place-items-center rounded-full ${
+                    t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {t.type === "Credit" ? (
+                    <ArrowDownLeft className="h-4 w-4" />
+                  ) : (
+                    <ArrowUpRight className="h-4 w-4" />
+                  )}
                 </div>
                 <div>
                   <div className="text-sm font-medium">{t.description}</div>
@@ -43,9 +53,12 @@ function TxPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className="text-[10px]">{t.status}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {t.status}
+                </Badge>
                 <div className={`text-sm font-semibold ${t.type === "Credit" ? "text-success" : ""}`}>
-                  {t.type === "Credit" ? "+" : "-"}{format(t.amount)}
+                  {t.type === "Credit" ? "+" : "-"}
+                  {format(t.amount)}
                 </div>
               </div>
             </li>

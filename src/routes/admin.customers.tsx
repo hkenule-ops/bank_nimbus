@@ -21,7 +21,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, RefreshCw, Loader2, Pencil, Trash2, Wallet, MoreHorizontal } from "lucide-react";
+import {
+  Search,
+  RefreshCw,
+  Loader2,
+  Pencil,
+  Trash2,
+  Wallet,
+  MoreHorizontal,
+  Plus,
+  ArrowDownLeft,
+  ArrowUpRight,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,9 +41,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
-import type { Customer } from "@/lib/mock-auth";
+import type { Customer, Transaction } from "@/lib/mock-auth";
+import { sortTransactionsByDate } from "@/lib/mock-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/admin/customers")({
   component: CustomersPage,
@@ -53,6 +66,68 @@ const ACCOUNT_TYPES = [
 ];
 
 const STATUSES: Customer["status"][] = ["Active", "Suspended", "Pending Verification"];
+
+const TX_TYPES: Transaction["type"][] = ["Credit", "Debit"];
+const TX_STATUSES: Transaction["status"][] = ["Completed", "Pending", "Failed"];
+
+type TxForm = {
+  type: Transaction["type"];
+  amount: string;
+  description: string;
+  /** datetime-local value (no timezone) */
+  dateLocal: string;
+  status: Transaction["status"];
+  reference: string;
+  counterparty: string;
+  category: string;
+  notes: string;
+  /** Optional running balance after this entry — leave blank to let backend recompute */
+  balanceAfter: string;
+};
+
+function toDateLocal(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromDateLocal(local: string): string {
+  if (!local) return new Date().toISOString();
+  const d = new Date(local);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
+function emptyTxForm(): TxForm {
+  return {
+    type: "Credit",
+    amount: "",
+    description: "",
+    dateLocal: toDateLocal(new Date().toISOString()),
+    status: "Completed",
+    reference: "",
+    counterparty: "",
+    category: "",
+    notes: "",
+    balanceAfter: "",
+  };
+}
+
+function txToForm(t: Transaction): TxForm {
+  return {
+    type: t.type,
+    amount: String(t.amount ?? ""),
+    description: t.description || "",
+    dateLocal: toDateLocal(t.date),
+    status: t.status || "Completed",
+    reference: t.reference || "",
+    counterparty: t.counterparty || "",
+    category: t.category || "",
+    notes: t.notes || "",
+    balanceAfter: t.balance != null ? String(t.balance) : "",
+  };
+}
 
 type EditForm = {
   firstName: string;
@@ -169,9 +244,12 @@ function CustomersPage() {
 
   const [ledgerOpen, setLedgerOpen] = useState(false);
   const [ledgerCustomer, setLedgerCustomer] = useState<Customer | null>(null);
-  const [ledgerAmount, setLedgerAmount] = useState("");
-  const [ledgerDesc, setLedgerDesc] = useState("");
+  const [ledgerTxs, setLedgerTxs] = useState<Transaction[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerBusy, setLedgerBusy] = useState(false);
+  const [txFormMode, setTxFormMode] = useState<"list" | "create" | "edit">("list");
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [txForm, setTxForm] = useState<TxForm>(emptyTxForm());
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState<Customer | null>(null);
@@ -266,34 +344,158 @@ function CustomersPage() {
     }
   };
 
+  const loadCustomerTxs = useCallback(async (customerId: string) => {
+    setLedgerLoading(true);
+    try {
+      if (!isAppScriptConfigured()) {
+        setLedgerTxs([]);
+        return;
+      }
+      const res = await appScriptRequest<Transaction[]>("getTransactions", { customerId });
+      if (res.ok && Array.isArray(res.data)) {
+        setLedgerTxs(sortTransactionsByDate(res.data));
+      } else {
+        setLedgerTxs([]);
+        if (res.error) toast.error(res.error);
+      }
+    } finally {
+      setLedgerLoading(false);
+    }
+  }, []);
+
   const openLedger = (c: Customer) => {
     setLedgerCustomer(c);
-    setLedgerAmount("");
-    setLedgerDesc("");
+    setTxFormMode("list");
+    setEditingTx(null);
+    setTxForm(emptyTxForm());
     setLedgerOpen(true);
+    void loadCustomerTxs(c.customerId);
   };
 
-  const applyLedger = async (kind: "credit" | "debit") => {
-    if (!ledgerCustomer) return;
-    const amount = Number(ledgerAmount);
-    if (!(amount > 0)) {
+  const setTxField = (key: keyof TxForm, value: string) => {
+    setTxForm((f) => ({ ...f, [key]: value }));
+  };
+
+  const openCreateTx = () => {
+    setEditingTx(null);
+    setTxForm(emptyTxForm());
+    setTxFormMode("create");
+  };
+
+  const openEditTx = (t: Transaction) => {
+    setEditingTx(t);
+    setTxForm(txToForm(t));
+    setTxFormMode("edit");
+  };
+
+  const buildTxPayload = () => {
+    const amount = Number(txForm.amount);
+    if (!(amount > 0) || Number.isNaN(amount)) {
       toast.error("Enter a positive amount");
-      return;
+      return null;
     }
+    if (!txForm.description.trim()) {
+      toast.error("Description is required");
+      return null;
+    }
+    const payload: Record<string, unknown> = {
+      customerId: ledgerCustomer?.customerId,
+      type: txForm.type,
+      amount,
+      description: txForm.description.trim(),
+      date: fromDateLocal(txForm.dateLocal),
+      status: txForm.status,
+      reference: txForm.reference.trim() || undefined,
+      counterparty: txForm.counterparty.trim() || undefined,
+      category: txForm.category.trim() || undefined,
+      notes: txForm.notes.trim() || undefined,
+    };
+    if (txForm.balanceAfter.trim() !== "") {
+      const bal = Number(txForm.balanceAfter);
+      if (!Number.isNaN(bal)) payload.balance = bal;
+    }
+    return payload;
+  };
+
+  const saveTransaction = async () => {
+    if (!ledgerCustomer) return;
+    const payload = buildTxPayload();
+    if (!payload) return;
+
     setLedgerBusy(true);
     try {
-      const action = kind === "credit" ? "adminCredit" : "adminDebit";
-      const res = await appScriptRequest(action, {
+      if (txFormMode === "edit" && editingTx) {
+        const res = await appScriptRequest<Transaction>("adminUpdateTransaction", {
+          ...payload,
+          transactionId: editingTx.id,
+          id: editingTx.id,
+        });
+        if (res.ok) {
+          toast.success("Transaction updated — customer ledger will show the change");
+          setTxFormMode("list");
+          setEditingTx(null);
+          await loadCustomerTxs(ledgerCustomer.customerId);
+          void load();
+        } else {
+          // Fallback: recreate via credit/debit if update action is not on the script yet
+          toast.error(res.error || "Update failed. Ensure adminUpdateTransaction is deployed on Apps Script.");
+        }
+      } else {
+        // Prefer full create; fall back to adminCredit / adminDebit with extra fields
+        let res = await appScriptRequest<{
+          transaction?: Transaction;
+          transactions?: Transaction[];
+          user?: Customer;
+        }>("adminCreateTransaction", payload);
+
+        if (!res.ok) {
+          const action = txForm.type === "Credit" ? "adminCredit" : "adminDebit";
+          res = await appScriptRequest(action, {
+            customerId: ledgerCustomer.customerId,
+            amount: payload.amount,
+            description: payload.description,
+            date: payload.date,
+            status: payload.status,
+            type: payload.type,
+            reference: payload.reference,
+            counterparty: payload.counterparty,
+            category: payload.category,
+            notes: payload.notes,
+            balance: payload.balance,
+          });
+        }
+
+        if (res.ok) {
+          toast.success("Transaction created — visible on the customer account in date order");
+          setTxFormMode("list");
+          setTxForm(emptyTxForm());
+          await loadCustomerTxs(ledgerCustomer.customerId);
+          void load();
+        } else {
+          toast.error(res.error || "Could not create transaction");
+        }
+      }
+    } finally {
+      setLedgerBusy(false);
+    }
+  };
+
+  const deleteTransaction = async (t: Transaction) => {
+    if (!ledgerCustomer) return;
+    if (!window.confirm(`Delete transaction “${t.description}” (${t.id})?`)) return;
+    setLedgerBusy(true);
+    try {
+      const res = await appScriptRequest("adminDeleteTransaction", {
         customerId: ledgerCustomer.customerId,
-        amount,
-        description: ledgerDesc || (kind === "credit" ? "Admin credit" : "Admin debit"),
+        transactionId: t.id,
+        id: t.id,
       });
       if (res.ok) {
-        toast.success(kind === "credit" ? "Credit applied" : "Debit applied");
-        setLedgerOpen(false);
+        toast.success("Transaction deleted");
+        await loadCustomerTxs(ledgerCustomer.customerId);
         void load();
       } else {
-        toast.error(res.error || "Ledger update failed");
+        toast.error(res.error || "Delete failed. Ensure adminDeleteTransaction is deployed.");
       }
     } finally {
       setLedgerBusy(false);
@@ -607,33 +809,223 @@ function CustomersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={ledgerOpen} onOpenChange={setLedgerOpen}>
-        <DialogContent className="max-w-md w-[calc(100%-1.5rem)] rounded-xl sm:w-full">
-          <DialogHeader>
-            <DialogTitle>Adjust balance</DialogTitle>
-            <DialogDescription>
-              {ledgerCustomer
-                ? `${ledgerCustomer.firstName} ${ledgerCustomer.lastName} · $${Number(ledgerCustomer.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-                : ""}
+      <Dialog
+        open={ledgerOpen}
+        onOpenChange={(open) => {
+          setLedgerOpen(open);
+          if (!open) {
+            setTxFormMode("list");
+            setEditingTx(null);
+          }
+        }}
+      >
+        <DialogContent className="flex max-h-[100dvh] w-full max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-h-[90vh] sm:rounded-xl">
+          <DialogHeader className="shrink-0 border-b border-border px-4 py-4 sm:px-6">
+            <DialogTitle className="pr-8 text-base sm:text-lg">
+              {txFormMode === "list" && "Customer ledger"}
+              {txFormMode === "create" && "New transaction"}
+              {txFormMode === "edit" && "Edit transaction"}
+              {ledgerCustomer ? ` — ${ledgerCustomer.firstName} ${ledgerCustomer.lastName}` : ""}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {txFormMode === "list"
+                ? `Balance $${Number(ledgerCustomer?.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} · entries appear on the customer account sorted by date`
+                : "ID and running balance are auto-handled by the backend when left blank. Specify date, type, amount, status, and description."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label className="text-xs">Amount</Label>
-              <Input type="number" min="0" step="0.01" inputMode="decimal" value={ledgerAmount} onChange={(e) => setLedgerAmount(e.target.value)} className="mt-1.5 h-11" placeholder="0.00" />
-            </div>
-            <div>
-              <Label className="text-xs">Description</Label>
-              <Input value={ledgerDesc} onChange={(e) => setLedgerDesc(e.target.value)} className="mt-1.5 h-11" placeholder="Admin adjustment" />
-            </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+            {txFormMode === "list" && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {ledgerLoading ? "Loading…" : `${ledgerTxs.length} transaction${ledgerTxs.length === 1 ? "" : "s"}`}
+                  </p>
+                  <Button size="sm" className="gradient-primary text-primary-foreground" onClick={openCreateTx}>
+                    <Plus className="mr-1.5 h-4 w-4" /> New transaction
+                  </Button>
+                </div>
+
+                {ledgerLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading ledger…
+                  </div>
+                ) : ledgerTxs.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+                    No transactions yet. Create one to post to this customer’s account.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border rounded-lg border border-border">
+                    {ledgerTxs.map((t) => (
+                      <li key={t.id} className="flex items-start justify-between gap-3 px-3 py-3 sm:px-4">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div
+                            className={cn(
+                              "mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full",
+                              t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {t.type === "Credit" ? (
+                              <ArrowDownLeft className="h-4 w-4" />
+                            ) : (
+                              <ArrowUpRight className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium">{t.description}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {new Date(t.date).toLocaleString()} · {t.status}
+                              {t.reference ? ` · ref ${t.reference}` : ""}
+                            </div>
+                            <div className="font-mono text-[10px] text-muted-foreground">{t.id}</div>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <div className={cn("text-sm font-semibold", t.type === "Credit" && "text-success")}>
+                            {t.type === "Credit" ? "+" : "-"}$
+                            {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEditTx(t)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2 text-destructive"
+                              disabled={ledgerBusy}
+                              onClick={() => void deleteTransaction(t)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {(txFormMode === "create" || txFormMode === "edit") && (
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                {txFormMode === "edit" && editingTx && (
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Transaction ID (auto)</Label>
+                    <Input value={editingTx.id} disabled className="mt-1.5 h-11 font-mono text-xs opacity-70" />
+                  </div>
+                )}
+                {txFormMode === "create" && (
+                  <p className="sm:col-span-2 text-xs text-muted-foreground">
+                    Transaction ID is generated automatically by the backend.
+                  </p>
+                )}
+
+                <SelectField
+                  label="Type *"
+                  value={txForm.type}
+                  onChange={(v) => setTxField("type", v)}
+                  options={TX_TYPES}
+                />
+                <SelectField
+                  label="Status *"
+                  value={txForm.status}
+                  onChange={(v) => setTxField("status", v)}
+                  options={TX_STATUSES}
+                />
+                <Field
+                  label="Amount *"
+                  value={txForm.amount}
+                  onChange={(v) => setTxField("amount", v)}
+                  type="number"
+                />
+                <div>
+                  <Label className="text-xs">Date & time *</Label>
+                  <Input
+                    type="datetime-local"
+                    value={txForm.dateLocal}
+                    onChange={(e) => setTxField("dateLocal", e.target.value)}
+                    className="mt-1.5 h-11"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Description *</Label>
+                  <Input
+                    value={txForm.description}
+                    onChange={(e) => setTxField("description", e.target.value)}
+                    className="mt-1.5 h-11"
+                    placeholder="e.g. Wire credit — Acme Corp payroll"
+                  />
+                </div>
+                <Field
+                  label="Counterparty"
+                  value={txForm.counterparty}
+                  onChange={(v) => setTxField("counterparty", v)}
+                />
+                <Field
+                  label="Reference"
+                  value={txForm.reference}
+                  onChange={(v) => setTxField("reference", v)}
+                />
+                <Field
+                  label="Category"
+                  value={txForm.category}
+                  onChange={(v) => setTxField("category", v)}
+                />
+                <Field
+                  label="Balance after (optional — auto if blank)"
+                  value={txForm.balanceAfter}
+                  onChange={(v) => setTxField("balanceAfter", v)}
+                  type="number"
+                />
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Notes</Label>
+                  <Textarea
+                    value={txForm.notes}
+                    onChange={(e) => setTxField("notes", e.target.value)}
+                    className="mt-1.5 min-h-[80px]"
+                    placeholder="Internal admin notes (optional)"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" className="h-11 flex-1" disabled={ledgerBusy} onClick={() => void applyLedger("debit")}>
-              {ledgerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Debit"}
-            </Button>
-            <Button className="h-11 flex-1 gradient-primary text-primary-foreground" disabled={ledgerBusy} onClick={() => void applyLedger("credit")}>
-              {ledgerBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Credit"}
-            </Button>
+
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-4 py-3 sm:px-6">
+            {txFormMode === "list" ? (
+              <Button variant="outline" className="h-11 w-full sm:w-auto" onClick={() => setLedgerOpen(false)}>
+                Close
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  className="h-11 flex-1 sm:flex-none"
+                  disabled={ledgerBusy}
+                  onClick={() => {
+                    setTxFormMode("list");
+                    setEditingTx(null);
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  className="h-11 flex-1 gradient-primary text-primary-foreground sm:flex-none"
+                  disabled={ledgerBusy}
+                  onClick={() => void saveTransaction()}
+                >
+                  {ledgerBusy ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+                    </>
+                  ) : txFormMode === "edit" ? (
+                    "Save changes"
+                  ) : (
+                    "Post transaction"
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

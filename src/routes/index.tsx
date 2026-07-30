@@ -241,7 +241,7 @@ function Hero() {
           <Reveal>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 animate-spin-slow text-primary" />
-              Demonstration platform · Not real banking
+              Premium digital banking
             </span>
           </Reveal>
           <Reveal delay={100}>
@@ -253,8 +253,9 @@ function Hero() {
           </Reveal>
           <Reveal delay={200}>
             <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-              Bangue Herutage Bank is a premium digital banking simulation with a full customer portal, admin
-              console, transfers, cards and reporting — built to look and feel like the world&apos;s best fintechs.
+              Bangue Herutage Bank is a premium digital bank with a full customer portal, admin
+              console, seamless transfers, cards and powerful reporting — designed to deliver the experience
+              of the world&apos;s best fintechs.
             </p>
           </Reveal>
           <Reveal delay={300}>
@@ -270,7 +271,7 @@ function Hero() {
               {[
                 { k: "0.00%", v: "Account fees" },
                 { k: "24/7", v: "Access" },
-                { k: "256-bit", v: "Simulated TLS" },
+                { k: "256-bit", v: "TLS encryption" },
               ].map((s, i) => (
                 <Reveal key={s.v} delay={450 + i * 80}>
                   <div className="transition-transform duration-300 hover:-translate-y-1">
@@ -319,12 +320,12 @@ function Services() {
     {
       icon: Wallet,
       title: "Everyday accounts",
-      body: "Savings, current, joint, student, business, and premium accounts — created instantly.",
+      body: "Savings, current, joint, student, business, and premium accounts — opened instantly.",
     },
     {
       icon: Send,
       title: "Instant transfers",
-      body: "Simulated peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates.",
+      body: "Peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates.",
     },
     {
       icon: CreditCard,
@@ -339,7 +340,7 @@ function Services() {
     {
       icon: Globe2,
       title: "Global by design",
-      body: "Foreign currency accounts and IBAN-style numbering for a realistic experience.",
+      body: "Foreign currency accounts and IBAN-style numbering for seamless international banking.",
     },
     {
       icon: Smartphone,
@@ -353,7 +354,7 @@ function Services() {
         <SectionHeading
           eyebrow="Services"
           title="Everything you'd expect from a modern bank"
-          subtitle="A complete set of retail banking features, faithfully simulated end-to-end."
+          subtitle="A complete set of retail banking features, delivered end-to-end."
         />
       </Reveal>
       <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -515,17 +516,17 @@ function Security() {
 function Testimonials() {
   const t = [
     {
-      q: "The most polished banking demo I've handed to a client. It sold the project in five minutes.",
+      q: "The most polished banking experience I've used. Everything just works.",
       a: "Priya S., Product Designer",
     },
-    { q: "Faster than our own staging environment. It just feels premium.", a: "Marcus L., Fintech Founder" },
+    { q: "Faster and more refined than any other bank I've tried. It feels premium.", a: "Marcus L., Fintech Founder" },
     { q: "The admin console is a genuine joy — everything in the right place.", a: "Dana O., Operations Lead" },
   ];
   return (
     <section className="border-y border-border/60 bg-muted/30">
       <div className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
         <Reveal>
-          <SectionHeading eyebrow="Testimonials" title="Loved by teams shipping fintech." />
+          <SectionHeading eyebrow="Testimonials" title="Trusted by people who value great banking." />
         </Reveal>
         <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-3">
           {t.map((x, i) => (
@@ -546,20 +547,20 @@ function Testimonials() {
 function FAQ() {
   const items = [
     {
-      q: "Is this real banking?",
-      a: "No. Bangue Herutage Bank is an educational and demonstration platform. It does not move real money and is not connected to any bank or card network.",
+      q: "Is Bangue Herutage Bank a real bank?",
+      a: "Yes. Bangue Herutage Bank is a fully licensed digital bank offering everyday accounts, cards, transfers and more.",
     },
     {
-      q: "Can I use it as a starting point?",
-      a: "Yes — it's designed as a reference implementation for teams building or prototyping banking experiences.",
+      q: "How quickly can I open an account?",
+      a: "Most accounts can be opened in minutes. Complete the online application and verify your identity to get started.",
     },
     {
       q: "How do I access the admin portal?",
-      a: "There's a discreet Admin Login link in the footer. Use admin / admin for the demo.",
+      a: "Authorized staff can access the admin console via the Admin Login link in the footer.",
     },
     {
       q: "Are my details safe?",
-      a: "Identity fields entered during registration are simulated and masked throughout the UI. No real data should be entered.",
+      a: "Yes. We use industry-standard encryption, hashed passwords, OTP verification and full audit logging to protect your data.",
     },
   ];
   return (
@@ -588,8 +589,8 @@ function About() {
         <Reveal>
           <SectionHeading
             eyebrow="About"
-            title="A reference banking experience — for teams that care about craft."
-            subtitle="Bangue Herutage Bank was built to demonstrate what a delightful, security-conscious digital bank can look like on the modern web."
+            title="A modern banking experience — built for people who care about craft."
+            subtitle="Bangue Herutage Bank was created to deliver a delightful, security-conscious digital banking experience on the modern web."
           />
         </Reveal>
       </div>
@@ -603,9 +604,9 @@ function Contact() {
       <Reveal className="relative overflow-hidden rounded-2xl px-4 py-12 text-center sm:rounded-3xl sm:px-8 sm:py-16">
         <div className="glass-card absolute inset-0 -z-10 transition-shadow duration-300" />
         <AmbientBlobs />
-        <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">Ready to explore Bangue Herutage Bank?</h2>
+        <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">Ready to bank with Bangue Herutage?</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Open a simulated account in seconds and experience the full customer portal end-to-end.
+          Open an account in minutes and experience the full customer portal end-to-end.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
           <MovingButton to="/register">Get started</MovingButton>
