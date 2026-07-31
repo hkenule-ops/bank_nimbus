@@ -16,6 +16,8 @@ import {
   MessageCircle,
   Menu,
   X,
+  Bitcoin,
+  Landmark,
 } from "lucide-react";
 import {
   Sheet,
@@ -33,6 +35,8 @@ const items: ReadonlyArray<{ to: string; label: string; icon: typeof LayoutDashb
   { to: "/admin/otp", label: "Transfer OTP", icon: KeyRound },
   { to: "/admin/chat", label: "Live chat", icon: MessageCircle },
   { to: "/admin/cards", label: "Cards", icon: CreditCard },
+  { to: "/admin/crypto", label: "Crypto", icon: Bitcoin },
+  { to: "/admin/loans", label: "Loans", icon: Landmark },
   { to: "/admin/reports", label: "Reports", icon: FileText },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/admin/audit", label: "Audit logs", icon: ShieldAlert },
@@ -132,19 +136,28 @@ function NavLinks({
 }
 
 export function AdminShell({ children }: { children?: ReactNode }) {
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, logout, authReady } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) nav({ to: "/admin/login" });
-  }, [isAdmin, nav]);
+    if (!authReady) return;
+    if (!isAdmin) nav({ to: "/login" });
+  }, [isAdmin, authReady, nav]);
 
   // Close drawer on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [loc.pathname]);
+
+  if (!authReady) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-muted/30 text-sm text-muted-foreground">
+        Restoring session…
+      </div>
+    );
+  }
 
   if (!isAdmin) return null;
 

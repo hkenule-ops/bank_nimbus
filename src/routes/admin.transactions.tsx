@@ -150,7 +150,7 @@ function AdminTransactionsPage() {
     setFormOpen(true);
   };
 
-  const buildPayload = () => {
+  const buildPayload = (mode: "create" | "edit") => {
     const amount = Number(form.amount);
     if (!(amount > 0) || Number.isNaN(amount)) {
       toast.error("Enter a positive amount");
@@ -164,19 +164,24 @@ function AdminTransactionsPage() {
       toast.error("Select a customer");
       return null;
     }
+    const autoRef = form.reference.trim() || `REF-${Date.now().toString(36).toUpperCase()}`;
+    const autoCounterparty = form.counterparty.trim() || "Bangue Herutage Bank";
+    const autoCategory =
+      form.category.trim() || (form.type === "Credit" ? "Deposit" : "Withdrawal");
+
     const payload: Record<string, unknown> = {
       customerId: form.customerId.trim(),
       type: form.type,
       amount,
       description: form.description.trim(),
       date: fromDateLocal(form.dateLocal),
-      status: form.status,
-      reference: form.reference.trim() || undefined,
-      counterparty: form.counterparty.trim() || undefined,
-      category: form.category.trim() || undefined,
+      status: form.status || "Completed",
+      reference: autoRef,
+      counterparty: autoCounterparty,
+      category: autoCategory,
       notes: form.notes.trim() || undefined,
     };
-    if (form.balanceAfter.trim() !== "") {
+    if (mode === "edit" && form.balanceAfter.trim() !== "") {
       const bal = Number(form.balanceAfter);
       if (!Number.isNaN(bal)) payload.balance = bal;
     }
@@ -184,7 +189,7 @@ function AdminTransactionsPage() {
   };
 
   const save = async () => {
-    const payload = buildPayload();
+    const payload = buildPayload(formMode === "edit" ? "edit" : "create");
     if (!payload) return;
     setBusy(true);
     try {
@@ -344,8 +349,7 @@ function AdminTransactionsPage() {
               {formMode === "create" ? "New transaction" : "Edit transaction"}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              ID is auto-generated on create. Leave balance blank to let the backend recompute running balances.
-              Entries show on the customer portal sorted by date.
+              Enter customer, type, amount, date, status, and description. ID, reference, counterparty, category, and balance are generated automatically.
             </DialogDescription>
           </DialogHeader>
 
@@ -353,8 +357,16 @@ function AdminTransactionsPage() {
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
               {formMode === "edit" && editing && (
                 <div className="sm:col-span-2">
-                  <Label className="text-xs">Transaction ID (auto)</Label>
+                  <Label className="text-xs">Transaction ID (system)</Label>
                   <Input value={editing.id} disabled className="mt-1.5 h-11 font-mono text-xs opacity-70" />
+                </div>
+              )}
+
+              {formMode === "create" && (
+                <div className="sm:col-span-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <span className="font-medium text-foreground">Auto-generated:</span> transaction ID,
+                  reference, counterparty (Bangue Herutage Bank), category (Deposit / Withdrawal), and
+                  running balance.
                 </div>
               )}
 
@@ -439,50 +451,53 @@ function AdminTransactionsPage() {
                 />
               </div>
 
-              <div>
-                <Label className="text-xs">Counterparty</Label>
-                <Input
-                  value={form.counterparty}
-                  onChange={(e) => setField("counterparty", e.target.value)}
-                  className="mt-1.5 h-11"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Reference</Label>
-                <Input
-                  value={form.reference}
-                  onChange={(e) => setField("reference", e.target.value)}
-                  className="mt-1.5 h-11"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Category</Label>
-                <Input
-                  value={form.category}
-                  onChange={(e) => setField("category", e.target.value)}
-                  className="mt-1.5 h-11"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Balance after (optional)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.balanceAfter}
-                  onChange={(e) => setField("balanceAfter", e.target.value)}
-                  className="mt-1.5 h-11"
-                  placeholder="Auto if blank"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <Label className="text-xs">Notes</Label>
-                <Textarea
-                  value={form.notes}
-                  onChange={(e) => setField("notes", e.target.value)}
-                  className="mt-1.5 min-h-[80px]"
-                  placeholder="Internal notes"
-                />
-              </div>
+              {formMode === "edit" && (
+                <>
+                  <div>
+                    <Label className="text-xs">Counterparty</Label>
+                    <Input
+                      value={form.counterparty}
+                      onChange={(e) => setField("counterparty", e.target.value)}
+                      className="mt-1.5 h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Reference</Label>
+                    <Input
+                      value={form.reference}
+                      onChange={(e) => setField("reference", e.target.value)}
+                      className="mt-1.5 h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Category</Label>
+                    <Input
+                      value={form.category}
+                      onChange={(e) => setField("category", e.target.value)}
+                      className="mt-1.5 h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Balance after</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={form.balanceAfter}
+                      onChange={(e) => setField("balanceAfter", e.target.value)}
+                      className="mt-1.5 h-11"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Notes</Label>
+                    <Textarea
+                      value={form.notes}
+                      onChange={(e) => setField("notes", e.target.value)}
+                      className="mt-1.5 min-h-[72px]"
+                      placeholder="Internal notes"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

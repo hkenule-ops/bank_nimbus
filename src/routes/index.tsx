@@ -74,7 +74,6 @@ function Reveal({
 
 /* ---------- Decorative motion primitives ---------- */
 
-/** Hero background blobs: continuous float animation + mouse-parallax drift */
 function FloatingBlobs() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: 0.5, y: 0.5 });
@@ -125,7 +124,6 @@ function FloatingBlobs() {
   );
 }
 
-/** Lightweight closing-CTA blobs (no parallax, just continuous float) */
 function AmbientBlobs() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -144,11 +142,11 @@ function MarqueeTicker() {
     "0.00% account fees",
     "Instant transfers",
     "OTP verification",
-    "Every action audit-logged",
+    "Full transaction history",
     "Virtual & physical cards",
-    "Mobile-first design",
     "Foreign currency accounts",
-    "Live market data",
+    "Live market rates",
+    "24/7 account access",
   ];
   const track = [...items, ...items];
   return (
@@ -168,7 +166,6 @@ function MarqueeTicker() {
   );
 }
 
-/** Primary CTA button: continuous breathing pulse, glow ring, shimmer sweep, bouncing arrow */
 function MovingButton({
   to,
   children,
@@ -248,14 +245,13 @@ function Hero() {
             <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl lg:text-6xl">
               Banking,{" "}
               <span className="text-gradient bg-[length:200%_auto] animate-gradient-shift">reimagined</span> for
-              the modern web.
+              everyday life.
             </h1>
           </Reveal>
           <Reveal delay={200}>
             <p className="mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-              Bangue Herutage Bank is a premium digital bank with a full customer portal, admin
-              console, seamless transfers, cards and powerful reporting — designed to deliver the experience
-              of the world&apos;s best fintechs.
+              Bangue Herutage Bank gives you everyday accounts, instant transfers, debit and virtual cards,
+              foreign currency holdings and clear reporting — all designed around how you actually manage money.
             </p>
           </Reveal>
           <Reveal delay={300}>
@@ -271,7 +267,7 @@ function Hero() {
               {[
                 { k: "0.00%", v: "Account fees" },
                 { k: "24/7", v: "Access" },
-                { k: "256-bit", v: "TLS encryption" },
+                { k: "256-bit", v: "Encryption" },
               ].map((s, i) => (
                 <Reveal key={s.v} delay={450 + i * 80}>
                   <div className="transition-transform duration-300 hover:-translate-y-1">
@@ -320,32 +316,32 @@ function Services() {
     {
       icon: Wallet,
       title: "Everyday accounts",
-      body: "Savings, current, joint, student, business, and premium accounts — opened instantly.",
+      body: "Savings, current, joint, student, business and premium accounts — opened quickly and ready to use.",
     },
     {
       icon: Send,
       title: "Instant transfers",
-      body: "Peer-to-peer transfers between Bangue Herutage Bank customers with real-time updates.",
+      body: "Send money between Bangue Herutage Bank accounts instantly, with clear confirmation and history.",
     },
     {
       icon: CreditCard,
-      title: "Cards on demand",
-      body: "Request debit, virtual, or replacement cards. Freeze, unfreeze and block in one tap.",
+      title: "Cards when you need them",
+      body: "Request debit or virtual cards. Freeze, unfreeze or replace a card in a few taps.",
     },
     {
       icon: BarChart3,
-      title: "Insights & reports",
-      body: "Beautiful monthly summaries, revenue charts and export to PDF or CSV.",
+      title: "Spending insights",
+      body: "Clear monthly summaries and spending breakdowns so you always know where your money goes.",
     },
     {
       icon: Globe2,
-      title: "Global by design",
-      body: "Foreign currency accounts and IBAN-style numbering for seamless international banking.",
+      title: "International banking",
+      body: "Hold foreign currency accounts and use IBAN-style details for cross-border payments.",
     },
     {
       icon: Smartphone,
-      title: "Mobile-first",
-      body: "Every screen is crafted to feel great on your phone, tablet and desktop.",
+      title: "Bank anywhere",
+      body: "Manage your accounts, cards and transfers from your phone, tablet or computer.",
     },
   ];
   return (
@@ -353,8 +349,8 @@ function Services() {
       <Reveal>
         <SectionHeading
           eyebrow="Services"
-          title="Everything you'd expect from a modern bank"
-          subtitle="A complete set of retail banking features, delivered end-to-end."
+          title="Everything you need from a modern bank"
+          subtitle="Clear accounts, fast transfers, cards and reporting — built around everyday banking."
         />
       </Reveal>
       <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -393,19 +389,19 @@ function Features() {
         <div>
           <Reveal>
             <SectionHeading
-              eyebrow="Features"
-              title="A dashboard people actually enjoy using."
-              subtitle="Clean information hierarchy, purposeful motion, and the metrics that matter — front and center."
+              eyebrow="Your money, clearly"
+              title="See balances, spending and activity at a glance."
+              subtitle="Know exactly where you stand — available funds, recent transactions and card status — without hunting through menus."
               align="left"
             />
           </Reveal>
           <ul className="mt-8 space-y-4">
             {[
-              "Balance & spending at a glance",
-              "One-click transfers with beneficiaries",
-              "Card controls: freeze, unfreeze, virtual",
-              "Notifications & security alerts",
-              "Profile completion & verification status",
+              "Balances and recent activity in one place",
+              "Quick transfers to saved beneficiaries",
+              "Card controls: freeze, unfreeze, virtual cards",
+              "Alerts for payments and security events",
+              "Clear verification and account status",
             ].map((s, i) => (
               <Reveal key={s} delay={i * 90} className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
@@ -482,8 +478,8 @@ function Security() {
       <Reveal>
         <SectionHeading
           eyebrow="Security"
-          title="Built with a security-first mindset."
-          subtitle="OTP verification, session controls, masked identity fields, and audit trails — because trust is everything."
+          title="Your money and data protected."
+          subtitle="Strong verification, encrypted credentials and full records of important actions — so you can bank with confidence."
         />
       </Reveal>
       <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-3">
@@ -491,13 +487,17 @@ function Security() {
           {
             icon: Shield,
             t: "OTP verification",
-            b: "Six-digit codes for registration, new devices, and password reset.",
+            b: "One-time codes for new devices, password changes and sensitive actions.",
           },
-          { icon: Lock, t: "Hashed passwords", b: "Passwords are never stored in plain text — always hashed." },
+          {
+            icon: Lock,
+            t: "Protected credentials",
+            b: "Passwords are never stored in plain text. Access is tightly controlled.",
+          },
           {
             icon: BarChart3,
-            t: "Full audit logs",
-            b: "Every admin action is traceable in the audit log for accountability.",
+            t: "Full activity records",
+            b: "Important account and administrative actions are logged for accountability.",
           },
         ].map((it, i) => (
           <Reveal key={it.t} delay={i * 100}>
@@ -516,17 +516,23 @@ function Security() {
 function Testimonials() {
   const t = [
     {
-      q: "The most polished banking experience I've used. Everything just works.",
-      a: "Priya S., Product Designer",
+      q: "Opening the account was straightforward and transfers land immediately. Exactly what I needed.",
+      a: "Priya S.",
     },
-    { q: "Faster and more refined than any other bank I've tried. It feels premium.", a: "Marcus L., Fintech Founder" },
-    { q: "The admin console is a genuine joy — everything in the right place.", a: "Dana O., Operations Lead" },
+    {
+      q: "Cards, balances and payments are all easy to manage. It feels reliable every day.",
+      a: "Marcus L.",
+    },
+    {
+      q: "Clear statements and quick support when I needed it. Banking without the friction.",
+      a: "Dana O.",
+    },
   ];
   return (
     <section className="border-y border-border/60 bg-muted/30">
       <div className="mx-auto max-w-7xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
         <Reveal>
-          <SectionHeading eyebrow="Testimonials" title="Trusted by people who value great banking." />
+          <SectionHeading eyebrow="Customers" title="Trusted for everyday banking." />
         </Reveal>
         <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-6 md:grid-cols-3">
           {t.map((x, i) => (
@@ -548,25 +554,25 @@ function FAQ() {
   const items = [
     {
       q: "Is Bangue Herutage Bank a real bank?",
-      a: "Yes. Bangue Herutage Bank is a fully licensed digital bank offering everyday accounts, cards, transfers and more.",
+      a: "Yes. Bangue Herutage Bank is a digital bank offering everyday accounts, cards, transfers and related services.",
     },
     {
       q: "How quickly can I open an account?",
-      a: "Most accounts can be opened in minutes. Complete the online application and verify your identity to get started.",
+      a: "Most accounts can be opened in minutes. Complete the application and verify your identity to start using your account.",
     },
     {
-      q: "How do I access the admin portal?",
-      a: "Authorized staff can access the admin console via the Admin Login link in the footer.",
+      q: "How do I manage cards and transfers?",
+      a: "Once signed in you can request cards, freeze or replace them, add beneficiaries and send money directly from your accounts.",
     },
     {
-      q: "Are my details safe?",
-      a: "Yes. We use industry-standard encryption, hashed passwords, OTP verification and full audit logging to protect your data.",
+      q: "How is my information protected?",
+      a: "We use encryption, one-time verification codes and controlled access so your credentials and transactions stay protected.",
     },
   ];
   return (
     <section className="mx-auto max-w-4xl px-3 py-16 sm:px-6 sm:py-24 lg:px-8">
       <Reveal>
-        <SectionHeading eyebrow="FAQ" title="Answers to common questions." />
+        <SectionHeading eyebrow="FAQ" title="Common questions." />
       </Reveal>
       <Reveal delay={100}>
         <Accordion type="single" collapsible className="mt-10">
@@ -589,8 +595,8 @@ function About() {
         <Reveal>
           <SectionHeading
             eyebrow="About"
-            title="A modern banking experience — built for people who care about craft."
-            subtitle="Bangue Herutage Bank was created to deliver a delightful, security-conscious digital banking experience on the modern web."
+            title="Banking built around how people use money."
+            subtitle="Bangue Herutage Bank focuses on clear accounts, reliable transfers, practical card controls and straightforward reporting — so managing your money stays simple."
           />
         </Reveal>
       </div>
@@ -604,9 +610,9 @@ function Contact() {
       <Reveal className="relative overflow-hidden rounded-2xl px-4 py-12 text-center sm:rounded-3xl sm:px-8 sm:py-16">
         <div className="glass-card absolute inset-0 -z-10 transition-shadow duration-300" />
         <AmbientBlobs />
-        <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">Ready to bank with Bangue Herutage?</h2>
+        <h2 className="text-2xl font-bold sm:text-3xl md:text-4xl">Ready to open an account?</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-          Open an account in minutes and experience the full customer portal end-to-end.
+          Open an account in minutes and start managing transfers, cards and balances right away.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
           <MovingButton to="/register">Get started</MovingButton>

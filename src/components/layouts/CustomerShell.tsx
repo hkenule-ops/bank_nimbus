@@ -72,18 +72,28 @@ function NavLinks({ onNavigate, className }: { onNavigate?: () => void; classNam
 }
 
 export function CustomerShell({ children }: { children?: ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, authReady } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    // Wait until session is restored from storage before deciding to kick out
+    if (!authReady) return;
     if (!user) nav({ to: "/login" });
-  }, [user, nav]);
+  }, [user, authReady, nav]);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [loc.pathname]);
+
+  if (!authReady) {
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-muted/30 text-sm text-muted-foreground">
+        Restoring session…
+      </div>
+    );
+  }
 
   if (!user) return null;
 

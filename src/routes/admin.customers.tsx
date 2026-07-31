@@ -388,7 +388,7 @@ function CustomersPage() {
     setTxFormMode("edit");
   };
 
-  const buildTxPayload = () => {
+  const buildTxPayload = (mode: "create" | "edit") => {
     const amount = Number(txForm.amount);
     if (!(amount > 0) || Number.isNaN(amount)) {
       toast.error("Enter a positive amount");
@@ -398,19 +398,30 @@ function CustomersPage() {
       toast.error("Description is required");
       return null;
     }
+    // Auto-generated fields (same idea as bank systems — not blank for the admin to invent)
+    const autoRef =
+      txForm.reference.trim() ||
+      `REF-${Date.now().toString(36).toUpperCase()}`;
+    const autoCounterparty =
+      txForm.counterparty.trim() || "Bangue Herutage Bank";
+    const autoCategory =
+      txForm.category.trim() ||
+      (txForm.type === "Credit" ? "Deposit" : "Withdrawal");
+
     const payload: Record<string, unknown> = {
       customerId: ledgerCustomer?.customerId,
       type: txForm.type,
       amount,
       description: txForm.description.trim(),
       date: fromDateLocal(txForm.dateLocal),
-      status: txForm.status,
-      reference: txForm.reference.trim() || undefined,
-      counterparty: txForm.counterparty.trim() || undefined,
-      category: txForm.category.trim() || undefined,
+      status: txForm.status || "Completed",
+      reference: autoRef,
+      counterparty: autoCounterparty,
+      category: autoCategory,
       notes: txForm.notes.trim() || undefined,
     };
-    if (txForm.balanceAfter.trim() !== "") {
+    // Running balance is always computed by the backend on create
+    if (mode === "edit" && txForm.balanceAfter.trim() !== "") {
       const bal = Number(txForm.balanceAfter);
       if (!Number.isNaN(bal)) payload.balance = bal;
     }
@@ -419,7 +430,7 @@ function CustomersPage() {
 
   const saveTransaction = async () => {
     if (!ledgerCustomer) return;
-    const payload = buildTxPayload();
+    const payload = buildTxPayload(txFormMode === "edit" ? "edit" : "create");
     if (!payload) return;
 
     setLedgerBusy(true);
@@ -830,7 +841,7 @@ function CustomersPage() {
             <DialogDescription className="text-xs sm:text-sm">
               {txFormMode === "list"
                 ? `Balance $${Number(ledgerCustomer?.balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} · entries appear on the customer account sorted by date`
-                : "ID and running balance are auto-handled by the backend when left blank. Specify date, type, amount, status, and description."}
+                : "Enter type, amount, date, status, and description. ID, reference, counterparty, category, and balance are generated automatically."}
             </DialogDescription>
           </DialogHeader>
 
@@ -911,14 +922,17 @@ function CustomersPage() {
               <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                 {txFormMode === "edit" && editingTx && (
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">Transaction ID (auto)</Label>
+                    <Label className="text-xs">Transaction ID (system)</Label>
                     <Input value={editingTx.id} disabled className="mt-1.5 h-11 font-mono text-xs opacity-70" />
                   </div>
                 )}
+
                 {txFormMode === "create" && (
-                  <p className="sm:col-span-2 text-xs text-muted-foreground">
-                    Transaction ID is generated automatically by the backend.
-                  </p>
+                  <div className="sm:col-span-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+                    <span className="font-medium text-foreground">Auto-generated:</span> transaction ID,
+                    reference, counterparty (Bangue Herutage Bank), category (Deposit / Withdrawal), and
+                    running balance after the entry.
+                  </div>
                 )}
 
                 <SelectField
@@ -957,36 +971,42 @@ function CustomersPage() {
                     placeholder="e.g. Wire credit — Acme Corp payroll"
                   />
                 </div>
-                <Field
-                  label="Counterparty"
-                  value={txForm.counterparty}
-                  onChange={(v) => setTxField("counterparty", v)}
-                />
-                <Field
-                  label="Reference"
-                  value={txForm.reference}
-                  onChange={(v) => setTxField("reference", v)}
-                />
-                <Field
-                  label="Category"
-                  value={txForm.category}
-                  onChange={(v) => setTxField("category", v)}
-                />
-                <Field
-                  label="Balance after (optional — auto if blank)"
-                  value={txForm.balanceAfter}
-                  onChange={(v) => setTxField("balanceAfter", v)}
-                  type="number"
-                />
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Notes</Label>
-                  <Textarea
-                    value={txForm.notes}
-                    onChange={(e) => setTxField("notes", e.target.value)}
-                    className="mt-1.5 min-h-[80px]"
-                    placeholder="Internal admin notes (optional)"
-                  />
-                </div>
+
+                {/* Edit only: allow overriding system fields if needed */}
+                {txFormMode === "edit" && (
+                  <>
+                    <Field
+                      label="Counterparty"
+                      value={txForm.counterparty}
+                      onChange={(v) => setTxField("counterparty", v)}
+                    />
+                    <Field
+                      label="Reference"
+                      value={txForm.reference}
+                      onChange={(v) => setTxField("reference", v)}
+                    />
+                    <Field
+                      label="Category"
+                      value={txForm.category}
+                      onChange={(v) => setTxField("category", v)}
+                    />
+                    <Field
+                      label="Balance after"
+                      value={txForm.balanceAfter}
+                      onChange={(v) => setTxField("balanceAfter", v)}
+                      type="number"
+                    />
+                    <div className="sm:col-span-2">
+                      <Label className="text-xs">Notes</Label>
+                      <Textarea
+                        value={txForm.notes}
+                        onChange={(e) => setTxField("notes", e.target.value)}
+                        className="mt-1.5 min-h-[72px]"
+                        placeholder="Internal admin notes (optional)"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

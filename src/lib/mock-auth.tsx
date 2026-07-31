@@ -94,6 +94,8 @@ export function sortTransactionsByDate(txs: Transaction[]): Transaction[] {
 interface AuthState {
   user: Customer | null;
   isAdmin: boolean;
+  /** False only during the first client tick while session is restored from storage. */
+  authReady: boolean;
   transactions: Transaction[];
   login: (identifier: string, password: string) => Promise<boolean>;
   loginAdmin: (username: string, password: string) => Promise<boolean>;
@@ -107,6 +109,31 @@ const AuthCtx = createContext<AuthState | null>(null);
 
 const STORAGE_KEY = "bangueherutage_auth_v1";
 const TX_KEY = "bangueherutage_tx_v1";
+
+function readStoredSession(): { user: Customer | null; isAdmin: boolean; transactions: Transaction[] } {
+  if (typeof window === "undefined") {
+    return { user: null, isAdmin: false, transactions: [] };
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { user: null, isAdmin: false, transactions: [] };
+    const parsed = JSON.parse(raw) as { user?: Customer | null; isAdmin?: boolean };
+    let transactions: Transaction[] = [];
+    try {
+      const txRaw = localStorage.getItem(TX_KEY);
+      if (txRaw) transactions = sortTransactionsByDate(JSON.parse(txRaw) as Transaction[]);
+    } catch {
+      /* ignore */
+    }
+    return {
+      user: parsed.user ?? null,
+      isAdmin: !!parsed.isAdmin,
+      transactions,
+    };
+  } catch {
+    return { user: null, isAdmin: false, transactions: [] };
+  }
+}
 
 function seedCustomer(overrides: Partial<Customer> = {}): Customer {
   return {
@@ -187,28 +214,56 @@ function stripPassword(c: Customer): Customer {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Initial state must be identical on server and client first paint.
+  // Reading localStorage in useState causes SSR hydration mismatches.
+  // Session is restored in useEffect; shells wait on `authReady` before redirecting.
   const [user, setUser] = useState<Customer | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setUser(parsed.user);
-        setIsAdmin(parsed.isAdmin);
-        if (parsed.user?.customerId && isAppScriptConfigured()) {
-          void loadTx(parsed.user.customerId);
-        } else if (parsed.user) {
-          const tx = localStorage.getItem(TX_KEY);
-          if (tx) setTransactions(JSON.parse(tx));
-          else setTransactions(seedTx);
-        }
-      }
-    } catch {
-      /* ignore */
+    const stored = readStoredSession();
+    setUser(stored.user);
+    setIsAdmin(stored.isAdmin);
+    if (stored.transactions.length) {
+      setTransactions(stored.transactions);
+    } else if (stored.user && !isAppScriptConfigured()) {
+      setTransactions(seedTx);
     }
+    setAuthReady(true);
+
+    const customerId = stored.user?.customerId;
+    if (customerId && isAppScriptConfigured()) {
+      void loadTx(customerId);
+      // Soft-refresh customer profile (balance, status) without forcing re-login
+      void (async () => {
+        try {
+          const res = await appScriptRequest<Customer[]>("listCustomers", {});
+          if (res.ok && Array.isArray(res.data)) {
+            const match = res.data.find((c) => c.customerId === customerId);
+            if (match) {
+              const next = stripPassword(match);
+              setUser((prev) => {
+                const merged = prev ? { ...prev, ...next } : next;
+                try {
+                  localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify({ user: merged, isAdmin: false }),
+                  );
+                } catch {
+                  /* ignore */
+                }
+                return merged;
+              });
+            }
+          }
+        } catch {
+          /* keep local session if network fails */
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for session restore
   }, []);
 
   const persist = (u: Customer | null, admin: boolean) => {
@@ -357,13 +412,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user,
     isAdmin,
+    authReady,
     transactions,
     login: async (identifier, password) => loginWithFallback(identifier, password),
     loginAdmin: async (username, password) => loginAdminWithFallback(username, password),
     logout: () => {
       persist(null, false);
       setTransactions([]);
-      localStorage.removeItem(TX_KEY);
+      try {
+        localStorage.removeItem(TX_KEY);
+      } catch {
+        /* ignore */
+      }
     },
     register: async (data) => registerWithFallback(data),
     updateBalance: async (delta, description, type) => {

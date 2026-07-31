@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useAuth } from "@/lib/mock-auth";
+import { useAuth, type Transaction } from "@/lib/mock-auth";
+import { TransactionReceiptModal } from "@/components/banking/TransactionReceipt";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/dashboard/")({
 
 function DashboardHome() {
   const { user, transactions } = useAuth();
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const { currency, toggleCurrency, format } = useCurrency();
   if (!user) return null;
 
@@ -63,19 +66,25 @@ function DashboardHome() {
           </div>
           <ul className="divide-y divide-border">
             {transactions.slice(0, 6).map((t) => (
-              <li key={t.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <div className={`grid h-9 w-9 place-items-center rounded-full ${t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
-                    {t.type === "Credit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTx(t)}
+                  className="flex w-full items-center justify-between py-3 text-left transition-colors hover:bg-muted/40 rounded-lg px-1 -mx-1"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`grid h-9 w-9 place-items-center rounded-full ${t.type === "Credit" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                      {t.type === "Credit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{t.description}</div>
+                      <div className="text-xs text-muted-foreground">{new Date(t.date).toLocaleString()}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">{t.description}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(t.date).toLocaleString()}</div>
+                  <div className={`text-sm font-semibold ${t.type === "Credit" ? "text-success" : ""}`}>
+                    {t.type === "Credit" ? "+" : "−"}{format(t.amount)}
                   </div>
-                </div>
-                <div className={`text-sm font-semibold ${t.type === "Credit" ? "text-success" : ""}`}>
-                  {t.type === "Credit" ? "+" : "-"}{format(t.amount)}
-                </div>
+                </button>
               </li>
             ))}
           </ul>
@@ -109,6 +118,13 @@ function DashboardHome() {
           </Card>
         </div>
       </section>
+      <TransactionReceiptModal
+        open={!!selectedTx}
+        onOpenChange={(o) => { if (!o) setSelectedTx(null); }}
+        transaction={selectedTx}
+        user={user}
+        format={format}
+      />
     </div>
   );
 }

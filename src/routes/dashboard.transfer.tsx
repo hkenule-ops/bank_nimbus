@@ -14,11 +14,17 @@ import { toast } from "sonner";
 import { Send, ShieldCheck, ArrowLeft, CheckCircle2, Copy, AlertTriangle, Clock, KeyRound } from "lucide-react";
 import {
   TOTAL_OTP_STAGES,
-  createTransferOtpSession,
   verifyTransferOtp,
   getTransferOtpSession,
   cancelTransferOtpSession,
   subscribeTransferOtp,
+  isLayerCodeActive,
+  clearActiveSession,
+  getTransferClearance,
+  getActiveTransferSession,
+  beginPendingTransfer,
+  declinePendingTransfer,
+  markTransferClearedLocal,
   type TransferOtpSession,
 } from "@/lib/transfer-otp";
 
@@ -101,7 +107,7 @@ function generateRef() {
 }
 
 function TransferPage() {
-  const { user, updateBalance } = useAuth();
+  const { user, updateBalance, refreshTransactions } = useAuth();
   const { currency, toggleCurrency, format, toUSD } = useCurrency();
   const nav = useNavigate();
 
@@ -117,8 +123,41 @@ function TransferPage() {
   const [completed, setCompleted] = useState<CompletedTransfer | null>(null);
 
   const [session, setSession] = useState<TransferOtpSession | null>(null);
+  const [transferCleared, setTransferCleared] = useState(false);
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
+
+  useEffect(() => {
+    if (!user?.customerId) return;
+    void (async () => {
+      const cleared = await getTransferClearance(user.customerId);
+      setTransferCleared(cleared);
+      if (cleared) return;
+      // Resume unfinished OTP at the next unverified layer (never re-ask verified ones)
+      const active = await getActiveTransferSession(user.customerId);
+      if (active && active.status === "pending" && Number(active.amount) > 0) {
+        setSession(active);
+        setDraft({
+          to: active.to,
+          routingNumber: "",
+          address: { street: "", city: "", state: "", postalCode: "", country: "US" },
+          phone: "",
+          amount: Number(active.amount) || 0,
+          desc: active.desc || "",
+        });
+        setStep("otp");
+        setOtpInput("");
+        setOtpError("");
+        const st = active.stage || 1;
+        const alert = LAYER_ALERTS[st];
+        if (alert) {
+          toast.info(`Resuming at security layer ${st}: [${alert.code}] ${alert.title}`, {
+            duration: 6000,
+          });
+        }
+      }
+    })();
+  }, [user?.customerId]);
   const [submitting, setSubmitting] = useState(false);
   const [starting, setStarting] = useState(false);
 
@@ -145,14 +184,16 @@ function TransferPage() {
   const selectedCountry = COUNTRIES.find((c) => c.code === address.country)!;
   const otpStage = session?.stage ?? 1;
   const layerAlert = LAYER_ALERTS[otpStage] ?? LAYER_ALERTS[1];
-  const codeIssued = Boolean(session?.codes?.[otpStage - 1]);
+  const codeIssued = isLayerCodeActive(session?.codes?.[otpStage - 1]);
 
   const setField = (field: keyof BankAddress) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setAddress((a) => ({ ...a, [field]: e.target.value }));
 
-  const resetAll = () => {
+  const resetAll = async () => {
     if (session?.id && session.status === "pending") {
-      void cancelTransferOtpSession(session.id);
+      await declinePendingTransfer(session.id);
+      try { await refreshTransactions(); } catch { /* ignore */ }
+      toast.message("Transfer marked incomplete — recorded in your history with the layer details.");
     }
     setTo(""); setRoutingNumber(""); setAddress(emptyAddress); setPhone(""); setAmount(""); setDesc("");
     setStep("form"); setDraft(null); setCompleted(null);
@@ -174,7 +215,16 @@ function TransferPage() {
       const draftData: TransferDraft = { to, routingNumber, address, phone, amount: amtUsd, desc };
       setDraft(draftData);
 
-      const created = await createTransferOtpSession({
+      // Already fully cleared once → transfer immediately, never ask OTP again
+      if (transferCleared) {
+        await updateBalance(amtUsd, `Transfer to ${to}${desc ? ` — ${desc}` : ""}`, "Debit");
+        setCompleted({ ...draftData, id: generateRef(), timestamp: new Date().toISOString() });
+        setStep("success");
+        toast.success("Transfer completed");
+        return;
+      }
+
+      const started = await beginPendingTransfer({
         customerId: user.customerId,
         customerName: `${user.firstName} ${user.lastName}`.trim(),
         customerEmail: user.email,
@@ -184,13 +234,45 @@ function TransferPage() {
         desc,
       });
 
-      setSession(created);
+      if (started.cleared) {
+        markTransferClearedLocal(user.customerId);
+        setTransferCleared(true);
+        // Funds already moved on the backend — refresh local ledger only
+        try {
+          await refreshTransactions();
+        } catch {
+          /* ignore */
+        }
+        setCompleted({ ...draftData, id: generateRef(), timestamp: new Date().toISOString() });
+        setStep("success");
+        toast.success("Transfer completed");
+        return;
+      }
+
+      if (!started.session) {
+        toast.error("Could not start verification session");
+        return;
+      }
+
+      setSession(started.session);
       setOtpInput("");
       setOtpError("");
       setStep("otp");
 
-      toast.error(`[${LAYER_ALERTS[1].code}] ${LAYER_ALERTS[1].title}`);
-      toast.info("Waiting for bank security to issue your verification code.", { duration: 6000 });
+      const st = started.session.stage || 1;
+      const alert = LAYER_ALERTS[st] ?? LAYER_ALERTS[1];
+      if (started.resumed) {
+        toast.info(`Continuing at layer ${st} — already verified layers stay cleared for all future transfers.`);
+        toast.error(`[${alert.code}] ${alert.title}`);
+      } else {
+        toast.error(`[${alert.code}] ${alert.title}`);
+        toast.info(
+          "Pending transfer saved. Verified layers stay cleared; incomplete transfers show the layer error on your receipt.",
+          { duration: 7000 },
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Transfer could not be started");
     } finally {
       setStarting(false);
     }
@@ -210,11 +292,23 @@ function TransferPage() {
       }
 
       if (result.completed) {
-        await updateBalance(draft.amount, `Transfer to ${draft.to}${draft.desc ? ` — ${draft.desc}` : ""}`, "Debit");
+        markTransferClearedLocal(user.customerId);
+        setTransferCleared(true);
+        // Prefer server balance; fall back to local debit if offline mode
+        try {
+          await refreshTransactions();
+        } catch {
+          try {
+            await updateBalance(draft.amount, `Transfer to ${draft.to}${draft.desc ? ` — ${draft.desc}` : ""}`, "Debit");
+          } catch {
+            /* ignore */
+          }
+        }
         setCompleted({ ...draft, id: generateRef(), timestamp: new Date().toISOString() });
         setSession(result.session ?? session);
         setStep("success");
-        toast.success("Transfer authorized and completed");
+        clearActiveSession();
+        toast.success("All security layers cleared. Future transfers will not require OTP on this account.");
         return;
       }
 
@@ -265,7 +359,7 @@ function TransferPage() {
             <Button variant="outline" className="flex-1" onClick={copyRef}>
               <Copy className="mr-2 h-4 w-4" /> Copy reference
             </Button>
-            <Button className="flex-1 gradient-primary text-primary-foreground" onClick={resetAll}>
+            <Button className="flex-1 gradient-primary text-primary-foreground" onClick={() => void resetAll()}>
               New transfer
             </Button>
           </div>
@@ -287,24 +381,32 @@ function TransferPage() {
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Verify it's you</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Security layer {otpStage} of {TOTAL_OTP_STAGES}. Enter the 6-digit code issued by bank authorization for this transfer.
+            Security layer {otpStage} of {TOTAL_OTP_STAGES}. Layers you already verified stay cleared permanently — they will never be asked again on this or any future transfer.
           </p>
         </div>
 
-        {/* Progress dots */}
+        {/* Progress — verified layers stay done */}
         <div className="flex items-center justify-center gap-2">
-          {Array.from({ length: TOTAL_OTP_STAGES }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                i + 1 < otpStage
-                  ? "bg-success"
-                  : i + 1 === otpStage
-                    ? "bg-primary ring-2 ring-primary/30"
-                    : "bg-muted-foreground/30"
-              }`}
-            />
-          ))}
+          {Array.from({ length: TOTAL_OTP_STAGES }).map((_, i) => {
+            const n = i + 1;
+            const done = n < otpStage || isLayerVerified(session.codes?.[i]);
+            const current = n === otpStage && !done;
+            return (
+              <div
+                key={i}
+                title={done ? `Layer ${n} verified` : current ? `Layer ${n} current` : `Layer ${n}`}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
+                  done
+                    ? "bg-success text-white"
+                    : current
+                      ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                      : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {done ? "✓" : n}
+              </div>
+            );
+          })}
         </div>
 
         {layerAlert && (
@@ -380,7 +482,7 @@ function TransferPage() {
               {submitting ? "Verifying…" : otpStage >= TOTAL_OTP_STAGES ? "Confirm and send" : "Verify layer"}
             </Button>
             <div className="flex items-center justify-between text-xs">
-              <button type="button" onClick={resetAll} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={() => void resetAll()} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="h-3 w-3" /> Cancel transfer
               </button>
               <button type="button" onClick={() => void refreshSession()} className="text-primary hover:underline">
@@ -398,7 +500,9 @@ function TransferPage() {
       <div>
         <h1 className="text-2xl font-bold">Send money</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Instant simulated transfer. Transfers require {TOTAL_OTP_STAGES} security layers authorized by bank staff.
+          {transferCleared
+            ? "Security clearance is complete on this account — transfers no longer require OTP."
+            : `Transfers require security layers until all ${TOTAL_OTP_STAGES} are verified once. Verified layers stay cleared permanently. Incomplete attempts appear in history with the layer error code.`}
         </p>
       </div>
       <Card className="p-6">

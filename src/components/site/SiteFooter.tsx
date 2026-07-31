@@ -33,7 +33,6 @@ export function SiteFooter() {
           <div className="flex items-center gap-4">
             <span>Terms</span>
             <span>Privacy</span>
-            <Link to="/admin/login" className="opacity-60 hover:opacity-100 hover:text-foreground">Admin Login</Link>
           </div>
         </div>
       </div>

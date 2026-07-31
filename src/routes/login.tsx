@@ -25,7 +25,10 @@ function AmbientBlobs() {
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div className="absolute -left-20 top-0 h-72 w-72 animate-float-slow rounded-full bg-[#c9aa54]/25 blur-3xl" />
       <div className="absolute -right-16 top-1/3 h-80 w-80 animate-float-slower rounded-full bg-primary/25 blur-3xl" />
-      <div className="absolute bottom-0 left-1/4 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/15 blur-3xl" style={{ animationDelay: "2s" }} />
+      <div
+        className="absolute bottom-0 left-1/4 h-64 w-64 animate-float-slow rounded-full bg-[#c9aa54]/15 blur-3xl"
+        style={{ animationDelay: "2s" }}
+      />
     </div>
   );
 }
@@ -36,40 +39,62 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { login } = useAuth();
+  const { login, loginAdmin, user, isAdmin, authReady } = useAuth();
   const nav = useNavigate();
 
   useEffect(() => {
-    // trigger entrance animation on mount
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
 
+  // Already signed in → send to the right area
+  useEffect(() => {
+    if (!authReady) return;
+    if (isAdmin) nav({ to: "/admin" });
+    else if (user) nav({ to: "/dashboard" });
+  }, [authReady, user, isAdmin, nav]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const identifier = id.trim();
+    const password = pw;
+    if (!identifier || !password) {
+      toast.error("Enter your email/username and password");
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      return;
+    }
+
     setLoading(true);
     try {
-      const ok = await login(id, pw);
-      if (ok) {
+      // Try customer first, then admin — one form for both
+      const customerOk = await login(identifier, password);
+      if (customerOk) {
         toast.success("Welcome back");
         nav({ to: "/dashboard" });
-      } else {
-        toast.error("Please enter your credentials");
-        setShake(true);
-        setTimeout(() => setShake(false), 400);
+        return;
       }
+
+      const adminOk = await loginAdmin(identifier, password);
+      if (adminOk) {
+        toast.success("Admin session started");
+        nav({ to: "/admin" });
+        return;
+      }
+
+      toast.error("Invalid credentials");
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    /* Strict h-screen with overflow-hidden disables page scrolling entirely */
     <div className="relative min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden gradient-hero flex flex-col justify-center items-center px-3 py-6 sm:px-4">
       <div className="absolute inset-0 animate-gradient-shift opacity-60" />
       <AmbientBlobs />
 
-      {/* Container with tight vertical gaps to ensure 100% fit */}
       <div className="relative z-10 flex w-full max-w-md flex-col justify-center py-2 safe-bottom">
         <Link
           to="/"
@@ -81,7 +106,6 @@ function LoginPage() {
           Back to home
         </Link>
 
-        {/* Scaled down logo slightly on short viewports */}
         <div
           className={`mb-4 flex justify-center transition-all duration-700 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
@@ -90,7 +114,6 @@ function LoginPage() {
           <Logo className="animate-float scale-90 sm:scale-100" />
         </div>
 
-        {/* Card padding reduced to p-5 sm:p-6 for vertical compacting */}
         <Card
           className={`glass-card relative overflow-hidden p-5 sm:p-6 transition-all duration-700 ease-out ${
             mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.97]"
@@ -98,19 +121,24 @@ function LoginPage() {
           style={{ transitionDelay: "120ms" }}
         >
           <h1 className="text-xl sm:text-2xl font-semibold">Sign in</h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">Access your Bangue Herutage account.</p>
+          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+            Customer and staff access — one secure portal.
+          </p>
 
           <form onSubmit={submit} className="mt-4 space-y-3 sm:space-y-4">
             <div
               className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
               style={{ transitionDelay: "220ms" }}
             >
-              <Label htmlFor="id" className="text-xs sm:text-sm">Email or username</Label>
+              <Label htmlFor="id" className="text-xs sm:text-sm">
+                Email, username, or staff ID
+              </Label>
               <Input
                 id="id"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
-                placeholder="alex@demo.bangueherutage"
+                placeholder="you@email.com or admin"
+                autoComplete="username"
                 className="mt-1 h-11 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
@@ -118,13 +146,16 @@ function LoginPage() {
               className={`transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
               style={{ transitionDelay: "300ms" }}
             >
-              <Label htmlFor="pw" className="text-xs sm:text-sm">Password</Label>
+              <Label htmlFor="pw" className="text-xs sm:text-sm">
+                Password
+              </Label>
               <Input
                 id="pw"
                 type="password"
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 className="mt-1 h-11 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
             </div>
@@ -158,7 +189,9 @@ function LoginPage() {
             }`}
             style={{ transitionDelay: "460ms" }}
           >
-            <Link to="/register" className="text-primary transition-colors hover:underline">Create account</Link>
+            <Link to="/register" className="text-primary transition-colors hover:underline">
+              Create account
+            </Link>
             <span className="text-muted-foreground cursor-pointer hover:underline">Forgot password?</span>
           </div>
 
@@ -171,7 +204,7 @@ function LoginPage() {
           }`}
           style={{ transitionDelay: "540ms" }}
         >
-          Demo — any credentials sign you in.
+          Customers use their account email. Staff use admin credentials — same page routes you automatically.
         </p>
       </div>
     </div>

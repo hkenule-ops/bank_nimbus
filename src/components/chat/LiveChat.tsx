@@ -27,21 +27,29 @@ import { useLocation } from "@tanstack/react-router";
  * Backend: Supabase when configured; otherwise UI still renders in demo mode.
  */
 export function LiveChat() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, authReady } = useAuth();
   const loc = useLocation();
   const onAdminRoute = loc.pathname.startsWith("/admin");
 
-  // Only hide the widget on admin login (no session yet)
-  if (onAdminRoute && !isAdmin && loc.pathname.includes("/login")) {
+  // Avoid rendering auth-dependent branches until client has restored session.
+  // Keeps SSR HTML identical to the first client paint (no hydration mismatch).
+  if (!authReady) {
     return null;
   }
 
-  // Admin reply console when signed in as admin
+  // Unified login lives at /login — no separate admin login page UI
+  if (loc.pathname === "/login" || loc.pathname === "/register") {
+    return null;
+  }
+
+  if (onAdminRoute && !isAdmin) {
+    return null;
+  }
+
   if (isAdmin) {
     return <AdminChatWidget />;
   }
 
-  // Public / customer support widget
   return <CustomerChatWidget user={user} />;
 }
 
@@ -73,7 +81,10 @@ function CustomerChatWidget({
     }
   }, [user]);
 
-  const visitorId = typeof window !== "undefined" ? getOrCreateVisitorId() : "ssr";
+  const [visitorId, setVisitorId] = useState("pending");
+  useEffect(() => {
+    setVisitorId(getOrCreateVisitorId());
+  }, []);
 
   const loadMessages = useCallback(async () => {
     if (!threadId) return;
@@ -448,7 +459,7 @@ function ChatShell({
           "gradient-primary text-primary-foreground",
           launcherClassName ?? "bottom-5",
         )}
-        aria-label={open ? "Close live chat" : agent ? "Open support desk" : "Open live chat"}
+        aria-label={open ? "Close chat" : "Open chat"}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!open && badge != null && badge > 0 && (

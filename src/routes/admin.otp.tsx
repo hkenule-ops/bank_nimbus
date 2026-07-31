@@ -13,6 +13,9 @@ import {
   adminGenerateTransferOtp,
   subscribeTransferOtp,
   type TransferOtpSession,
+  isLayerVerified,
+  isLayerCodeActive,
+  VERIFIED_MARKER,
 } from "@/lib/transfer-otp";
 import { isAppScriptConfigured } from "@/lib/appscript";
 
@@ -233,11 +236,15 @@ function SessionCard({
                 {isCurrent && !code && <Clock className="h-3.5 w-3.5 animate-pulse text-amber-600" />}
               </div>
 
-              {code ? (
+              {isPast || isLayerVerified(code) ? (
+                <div className="rounded-lg bg-success/10 px-2 py-2 text-center text-[11px] font-semibold text-success">
+                  Verified
+                </div>
+              ) : isLayerCodeActive(code) ? (
                 <div className="space-y-2">
                   <div className="font-mono text-sm font-bold tracking-widest">{code}</div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" className="h-7 flex-1 text-xs" onClick={() => onCopy(code)}>
+                    <Button size="sm" variant="outline" className="h-7 flex-1 text-xs" onClick={() => onCopy(code!)}>
                       <Copy className="mr-1 h-3 w-3" /> Copy
                     </Button>
                     {isCurrent && (
