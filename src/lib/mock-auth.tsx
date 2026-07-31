@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { appScriptRequest, isAppScriptConfigured } from "./appscript";
+import { useBackgroundRefresh } from "@/hooks/use-background-refresh";
 
 export type Role = "customer" | "admin";
 
@@ -237,34 +238,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (customerId && isAppScriptConfigured()) {
       void loadTx(customerId);
       // Soft-refresh customer profile (balance, status) without forcing re-login
-      void (async () => {
-        try {
-          const res = await appScriptRequest<Customer[]>("listCustomers", {});
-          if (res.ok && Array.isArray(res.data)) {
-            const match = res.data.find((c) => c.customerId === customerId);
-            if (match) {
-              const next = stripPassword(match);
-              setUser((prev) => {
-                const merged = prev ? { ...prev, ...next } : next;
-                try {
-                  localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify({ user: merged, isAdmin: false }),
-                  );
-                } catch {
-                  /* ignore */
-                }
-                return merged;
-              });
-            }
-          }
-        } catch {
-          /* keep local session if network fails */
-        }
-      })();
+      void syncProfile(customerId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for session restore
   }, []);
+
+  // Pulls the latest profile (balance, status, etc.) and merges it into
+  // local state quietly — no loading flags, no re-render flicker beyond the
+  // normal React diff. Safe to call repeatedly in the background.
+  const syncProfile = async (customerId: string) => {
+    try {
+      const res = await appScriptRequest<Customer[]>("listCustomers", {});
+      if (res.ok && Array.isArray(res.data)) {
+        const match = res.data.find((c) => c.customerId === customerId);
+        if (match) {
+          const next = stripPassword(match);
+          setUser((prev) => {
+            const merged = prev ? { ...prev, ...next } : next;
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: merged, isAdmin: false }));
+            } catch {
+              /* ignore */
+            }
+            return merged;
+          });
+        }
+      }
+    } catch {
+      /* keep local session if network fails */
+    }
+  };
 
   const persist = (u: Customer | null, admin: boolean) => {
     setUser(u);
@@ -408,6 +411,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TX_KEY, JSON.stringify(newTx));
     persist(updated, isAdmin);
   };
+
+  // Silently keep balance + transactions current in the background — polls
+  // every 30s while the tab is visible, plus an immediate refresh whenever
+  // the user switches back to the tab or reconnects to the network. No
+  // spinners, no toasts, no visible reload: state just quietly updates.
+  const backgroundSync = useCallback(async () => {
+    if (!user?.customerId || isAdmin) return;
+    await Promise.all([syncProfile(user.customerId), loadTx(user.customerId)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncProfile/loadTx close over stable refs each render
+  }, [user?.customerId, isAdmin]);
+
+  useBackgroundRefresh(backgroundSync, {
+    intervalMs: 30000,
+    enabled: authReady && !!user?.customerId && !isAdmin && isAppScriptConfigured(),
+  });
 
   const value: AuthState = {
     user,

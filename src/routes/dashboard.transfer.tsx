@@ -19,6 +19,7 @@ import {
   cancelTransferOtpSession,
   subscribeTransferOtp,
   isLayerCodeActive,
+  isLayerVerified,
   clearActiveSession,
   getTransferClearance,
   getActiveTransferSession,
@@ -42,6 +43,21 @@ const COUNTRIES = [
   { code: "DE", label: "Germany", postalLabel: "Postal code" },
   { code: "FR", label: "France", postalLabel: "Postal code" },
   { code: "OTHER", label: "Other", postalLabel: "Postal code" },
+] as const;
+
+const DIAL_CODES = [
+  { code: "US", flag: "🇺🇸", dial: "+1",   label: "United States" },
+  { code: "GB", flag: "🇬🇧", dial: "+44",  label: "United Kingdom" },
+  { code: "CH", flag: "🇨🇭", dial: "+41",  label: "Switzerland" },
+  { code: "CA", flag: "🇨🇦", dial: "+1",   label: "Canada" },
+  { code: "NG", flag: "🇳🇬", dial: "+234", label: "Nigeria" },
+  { code: "DE", flag: "🇩🇪", dial: "+49",  label: "Germany" },
+  { code: "FR", flag: "🇫🇷", dial: "+33",  label: "France" },
+  { code: "GH", flag: "🇬🇭", dial: "+233", label: "Ghana" },
+  { code: "ZA", flag: "🇿🇦", dial: "+27",  label: "South Africa" },
+  { code: "AE", flag: "🇦🇪", dial: "+971", label: "UAE" },
+  { code: "IN", flag: "🇮🇳", dial: "+91",  label: "India" },
+  { code: "AU", flag: "🇦🇺", dial: "+61",  label: "Australia" },
 ] as const;
 
 interface LayerAlert {
@@ -114,6 +130,7 @@ function TransferPage() {
   const [to, setTo] = useState("");
   const [routingNumber, setRoutingNumber] = useState("");
   const [address, setAddress] = useState<BankAddress>(emptyAddress);
+  const [dialCode, setDialCode] = useState<typeof DIAL_CODES[number]["code"]>("US");
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [desc, setDesc] = useState("");
@@ -133,9 +150,13 @@ function TransferPage() {
       const cleared = await getTransferClearance(user.customerId);
       setTransferCleared(cleared);
       if (cleared) return;
-      // Resume unfinished OTP at the next unverified layer (never re-ask verified ones)
+      // Resume unfinished OTP ONLY if there's a genuinely live pending
+      // transfer attached (pendingTxId) — i.e. the customer left mid-verification
+      // without cancelling. A discontinued/incomplete transfer clears pendingTxId
+      // and amount, so it correctly falls through to the form here; verified
+      // layers still carry over automatically once that new form is submitted.
       const active = await getActiveTransferSession(user.customerId);
-      if (active && active.status === "pending" && Number(active.amount) > 0) {
+      if (active && active.status === "pending" && active.pendingTxId && Number(active.amount) > 0) {
         setSession(active);
         setDraft({
           to: active.to,
@@ -195,7 +216,7 @@ function TransferPage() {
       try { await refreshTransactions(); } catch { /* ignore */ }
       toast.message("Transfer marked incomplete — recorded in your history with the layer details.");
     }
-    setTo(""); setRoutingNumber(""); setAddress(emptyAddress); setPhone(""); setAmount(""); setDesc("");
+    setTo(""); setRoutingNumber(""); setAddress(emptyAddress); setDialCode("US"); setPhone(""); setAmount(""); setDesc("");
     setStep("form"); setDraft(null); setCompleted(null);
     setSession(null); setOtpInput(""); setOtpError("");
   };
@@ -203,16 +224,24 @@ function TransferPage() {
   const requestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = parseFloat(amount);
-    if (!to || !entered || entered <= 0) return toast.error("Enter a valid recipient and amount");
-    if (!routingNumber) return toast.error("Enter the recipient's routing number");
-    if (!address.street || !address.city || !address.postalCode) return toast.error("Complete the recipient bank's address");
-    if (!phone) return toast.error("Enter a contact phone number");
+    const toClean = to.replace(/\D/g, "");
+    const routeClean = routingNumber.replace(/\D/g, "");
+    const phoneClean = phone.replace(/\D/g, "");
+
+    if (!toClean || toClean.length !== 10) return toast.error("Recipient account must be exactly 10 digits");
+    if (!routeClean || routeClean.length !== 9) return toast.error("Routing number must be exactly 9 digits");
+    if (!phoneClean || phoneClean.length < 7) return toast.error("Enter a valid phone number");
+    if (!entered || entered <= 0) return toast.error("Enter a valid amount");
+    if (!address.street.trim() || !address.city.trim() || !address.postalCode.trim()) return toast.error("Complete the recipient bank's address");
+
+    const selectedDial = DIAL_CODES.find((d) => d.code === dialCode)!;
+    const fullPhone = `${selectedDial.dial} ${phone.trim()}`;
     const amtUsd = toUSD(entered);
     if (amtUsd > user.balance) return toast.error("Insufficient balance");
 
     setStarting(true);
     try {
-      const draftData: TransferDraft = { to, routingNumber, address, phone, amount: amtUsd, desc };
+      const draftData: TransferDraft = { to: toClean, routingNumber: routeClean, address, phone: fullPhone, amount: amtUsd, desc };
       setDraft(draftData);
 
       // Already fully cleared once → transfer immediately, never ask OTP again
@@ -464,7 +493,6 @@ function TransferPage() {
                 onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
                 placeholder="6-digit code"
                 inputMode="numeric"
-                disabled={!codeIssued}
                 className={`mt-1.5 text-center text-lg tracking-[0.5em] ${otpError ? "border-destructive focus-visible:ring-destructive" : ""}`}
               />
               {otpError && (
@@ -495,6 +523,8 @@ function TransferPage() {
     );
   }
 
+  const selectedDial = DIAL_CODES.find((d) => d.code === dialCode)!;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-2 md:pb-0">
       <div>
@@ -502,32 +532,116 @@ function TransferPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {transferCleared
             ? "Security clearance is complete on this account — transfers no longer require OTP."
-            : `Transfers require security layers until all ${TOTAL_OTP_STAGES} are verified once. Verified layers stay cleared permanently. Incomplete attempts appear in history with the layer error code.`}
+            : `All 5 security layers are verified once, permanently. Incomplete transfers retain progress — pick up from where you left off.`}
         </p>
       </div>
-      <Card className="p-6">
-        <form onSubmit={requestOtp} className="space-y-4">
-          <div>
-            <Label>Recipient account number</Label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="10-digit account" className="mt-1.5" />
+
+      <form onSubmit={requestOtp} className="space-y-5">
+
+        {/* ── Section 1: Recipient ─────────────────────────── */}
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div className="border-b border-border/60 bg-muted/40 px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recipient details</p>
           </div>
+          <div className="space-y-4 p-5">
 
-          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Account number */}
             <div>
-              <Label>Routing number</Label>
-              <Input value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value)} placeholder="9-digit routing number" className="mt-1.5" />
+              <Label htmlFor="acct-num" className="text-sm font-medium">
+                Account number <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative mt-1.5">
+                <Input
+                  id="acct-num"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit account number"
+                  inputMode="numeric"
+                  maxLength={10}
+                  className="pr-16 font-mono tracking-wider"
+                />
+                <span className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs tabular-nums ${to.length === 10 ? "text-success" : "text-muted-foreground"}`}>
+                  {to.length}/10
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">Digits only — exactly 10 digits required</p>
             </div>
-            <div>
-              <Label>Recipient phone number</Label>
-              <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="mt-1.5" />
-            </div>
+
           </div>
+        </div>
 
-          <div className="space-y-3 rounded-xl border border-border/60 p-4">
-            <div className="text-sm font-medium">Recipient bank address</div>
+        {/* ── Section 2: Recipient Bank ────────────────────── */}
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div className="border-b border-border/60 bg-muted/40 px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recipient bank</p>
+          </div>
+          <div className="space-y-4 p-5">
 
+            {/* Routing number + Phone — same row */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="routing" className="text-sm font-medium">
+                  Routing number <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    id="routing"
+                    value={routingNumber}
+                    onChange={(e) => setRoutingNumber(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                    placeholder="9-digit routing"
+                    inputMode="numeric"
+                    maxLength={9}
+                    className="pr-12 font-mono tracking-wider"
+                  />
+                  <span className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs tabular-nums ${routingNumber.length === 9 ? "text-success" : "text-muted-foreground"}`}>
+                    {routingNumber.length}/9
+                  </span>
+                </div>
+              </div>
+
+              {/* Phone with flag + dial code */}
+              <div>
+                <Label htmlFor="phone-num" className="text-sm font-medium">
+                  Contact phone <span className="text-destructive">*</span>
+                </Label>
+                <div className="mt-1.5 flex gap-0">
+                  <Select value={dialCode} onValueChange={(v) => setDialCode(v as typeof DIAL_CODES[number]["code"])}>
+                    <SelectTrigger className="w-[108px] shrink-0 rounded-r-none border-r-0 font-mono text-sm focus:z-10">
+                      <SelectValue>
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-base leading-none">{selectedDial.flag}</span>
+                          <span className="text-xs text-muted-foreground">{selectedDial.dial}</span>
+                        </span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIAL_CODES.map((d) => (
+                        <SelectItem key={d.code} value={d.code}>
+                          <span className="flex items-center gap-2">
+                            <span className="text-base">{d.flag}</span>
+                            <span className="text-xs text-muted-foreground w-8">{d.dial}</span>
+                            <span className="text-sm">{d.label}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone-num"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s\-().]/g, "").slice(0, 15))}
+                    placeholder="800 000 0000"
+                    className="rounded-l-none font-mono"
+                    inputMode="tel"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Country */}
             <div>
-              <Label>Country</Label>
+              <Label className="text-sm font-medium">Country <span className="text-destructive">*</span></Label>
               <Select value={address.country} onValueChange={(v) => setAddress((a) => ({ ...a, country: v as BankAddress["country"] }))}>
                 <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -536,50 +650,108 @@ function TransferPage() {
               </Select>
             </div>
 
+            {/* Street */}
             <div>
-              <Label>Street address</Label>
-              <Input value={address.street} onChange={setField("street")} placeholder="123 Bank Street" className="mt-1.5" />
+              <Label htmlFor="street" className="text-sm font-medium">Street address <span className="text-destructive">*</span></Label>
+              <Input
+                id="street"
+                value={address.street}
+                onChange={setField("street")}
+                placeholder="123 Bank Avenue"
+                maxLength={100}
+                className="mt-1.5"
+              />
             </div>
 
+            {/* City / State / Postal */}
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="sm:col-span-1">
-                <Label>City</Label>
-                <Input value={address.city} onChange={setField("city")} placeholder="City" className="mt-1.5" />
+              <div>
+                <Label htmlFor="city" className="text-sm font-medium">City <span className="text-destructive">*</span></Label>
+                <Input id="city" value={address.city} onChange={setField("city")} placeholder="City" maxLength={60} className="mt-1.5" />
               </div>
               <div>
-                <Label>State / Province</Label>
-                <Input value={address.state} onChange={setField("state")} placeholder="Optional" className="mt-1.5" />
+                <Label htmlFor="state" className="text-sm font-medium">State / Region</Label>
+                <Input id="state" value={address.state} onChange={setField("state")} placeholder="Optional" maxLength={60} className="mt-1.5" />
               </div>
               <div>
-                <Label>{selectedCountry.postalLabel}</Label>
-                <Input value={address.postalCode} onChange={setField("postalCode")} placeholder={selectedCountry.postalLabel} className="mt-1.5" />
+                <Label htmlFor="postal" className="text-sm font-medium">{selectedCountry.postalLabel} <span className="text-destructive">*</span></Label>
+                <Input id="postal" value={address.postalCode} onChange={setField("postalCode")} placeholder={selectedCountry.postalLabel} maxLength={12} className="mt-1.5 font-mono" />
               </div>
             </div>
-          </div>
 
-          <div>
-            <Label>Amount ({currency})</Label>
-            <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="mt-1.5" />
           </div>
-          <div>
-            <Label>Description</Label>
-            <Textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What's this for?" className="mt-1.5" />
+        </div>
+
+        {/* ── Section 3: Transfer ──────────────────────────── */}
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div className="border-b border-border/60 bg-muted/40 px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transfer details</p>
           </div>
+          <div className="space-y-4 p-5">
 
-          <button
-            type="button"
-            onClick={toggleCurrency}
-            className="w-full rounded-lg bg-muted/60 p-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted"
-          >
-            Available balance: <span className="font-semibold text-foreground">{format(user.balance)}</span>
-            <span className="ml-2 underline decoration-dotted underline-offset-4">tap to view in {currency === "USD" ? "CHF" : "USD"}</span>
-          </button>
+            {/* Amount */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="amount" className="text-sm font-medium">
+                  Amount <span className="text-destructive">*</span>
+                </Label>
+                <button
+                  type="button"
+                  onClick={toggleCurrency}
+                  className="text-xs text-primary underline decoration-dotted underline-offset-4 hover:opacity-80"
+                >
+                  View in {currency === "USD" ? "CHF" : "USD"}
+                </button>
+              </div>
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                  {currency}
+                </span>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="pl-12 font-mono text-lg"
+                  inputMode="decimal"
+                />
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Available: <span className="font-semibold text-foreground">{format(user.balance)}</span>
+              </p>
+            </div>
 
-          <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={starting}>
-            <Send className="mr-2 h-4 w-4" /> {starting ? "Starting…" : "Continue"}
-          </Button>
-        </form>
-      </Card>
+            {/* Description */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="desc" className="text-sm font-medium">Description</Label>
+                <span className={`text-[11px] tabular-nums ${desc.length > 120 ? "text-amber-500" : "text-muted-foreground"}`}>
+                  {desc.length}/140
+                </span>
+              </div>
+              <Textarea
+                id="desc"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value.slice(0, 140))}
+                placeholder="What is this transfer for? (optional)"
+                rows={2}
+                className="mt-1.5 resize-none"
+                maxLength={140}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full gradient-primary text-primary-foreground h-11" disabled={starting}>
+          <Send className="mr-2 h-4 w-4" />
+          {starting ? "Starting…" : "Continue to verification"}
+        </Button>
+
+      </form>
     </div>
   );
 }

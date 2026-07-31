@@ -73,6 +73,37 @@ export function isLayerCodeActive(code: string | null | undefined): boolean {
   return Boolean(code && code !== VERIFIED_MARKER && /^\d{4,8}$/.test(code));
 }
 
+/**
+ * Per-customer permanent record of how many layers have been verified.
+ * This survives cancelled/incomplete sessions — a brand-new transfer session
+ * is seeded from this count instead of restarting at layer 1.
+ */
+function verifiedLayersKey(customerId: string) {
+  return `bangue_transfer_verified_layers_${customerId}`;
+}
+
+export function getVerifiedLayerCount(customerId: string): number {
+  try {
+    const raw = localStorage.getItem(verifiedLayersKey(customerId));
+    const n = raw ? parseInt(raw, 10) : 0;
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.min(n, TOTAL_OTP_STAGES);
+  } catch {
+    return 0;
+  }
+}
+
+/** Record that `count` layers are now permanently verified for this customer (only ever moves forward). */
+function persistVerifiedLayerCount(customerId: string, count: number) {
+  try {
+    const current = getVerifiedLayerCount(customerId);
+    const next = Math.max(current, Math.min(count, TOTAL_OTP_STAGES));
+    localStorage.setItem(verifiedLayersKey(customerId), String(next));
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Create a new multi-layer transfer OTP session (customer side). */
 export async function createTransferOtpSession(input: {
   customerId: string;
@@ -83,11 +114,19 @@ export async function createTransferOtpSession(input: {
   amount: number;
   desc: string;
 }): Promise<TransferOtpSession> {
+  // Seed from any layers this customer already verified on a previous
+  // (possibly cancelled/incomplete) transfer — never re-ask them.
+  const alreadyVerified = getVerifiedLayerCount(input.customerId);
+  const startStage = Math.min(alreadyVerified + 1, TOTAL_OTP_STAGES);
+  const codes = Array.from({ length: TOTAL_OTP_STAGES }, (_, i) =>
+    i < alreadyVerified ? VERIFIED_MARKER : null,
+  );
+
   const session: TransferOtpSession = {
     id: genId(),
     ...input,
-    stage: 1,
-    codes: Array.from({ length: TOTAL_OTP_STAGES }, () => null),
+    stage: startStage,
+    codes,
     status: "pending",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -224,15 +263,17 @@ export async function verifyTransferOtp(
     return { ok: false, error: "Invalid code entered. Please check and try again." };
   }
 
-  // Permanently clear this layer — never ask again
+  // Permanently clear this layer — never ask again, on this or any future transfer
   session.codes[stage - 1] = VERIFIED_MARKER;
   session.updatedAt = new Date().toISOString();
+  persistVerifiedLayerCount(session.customerId, stage);
 
   if (stage >= TOTAL_OTP_STAGES) {
     session.status = "completed";
     all[idx] = session;
     writeLocal(all);
     clearActiveSession();
+    markTransferClearedLocal(session.customerId);
     return { ok: true, session: normalizeSession(session), completed: true };
   }
 
@@ -379,12 +420,29 @@ export async function beginPendingTransfer(input: {
   if (cleared) return { cleared: true };
 
   const session = await createTransferOtpSession(input);
-  return { cleared: false, session };
+  const resumed = session.stage > 1 || session.codes.some((c) => isLayerVerified(c));
+  return { cleared: false, session, resumed };
 }
 
 export async function declinePendingTransfer(sessionId: string): Promise<void> {
   if (isAppScriptConfigured()) {
+    // Server marks this attempt "Failed" in history but keeps the session
+    // status "pending" and keeps stage/codes intact — verified layers are
+    // permanent and must resume next time. Do NOT also call cancelTransferOtp
+    // here; that overwrites status to "cancelled" and wipes progress.
     await appScriptRequest("declinePendingTransfer", { id: sessionId });
+    clearActiveSession();
+    return;
   }
-  await cancelTransferOtpSession(sessionId);
+
+  // Local (non-GAS) fallback: mark cancelled locally. Verified-layer progress
+  // is tracked separately per customer (see getVerifiedLayerCount) and is not
+  // affected by this session's status, so it still carries over correctly.
+  const all = readLocal();
+  const idx = all.findIndex((s) => s.id === sessionId);
+  if (idx >= 0) {
+    all[idx] = { ...all[idx], status: "cancelled", updatedAt: new Date().toISOString() };
+    writeLocal(all);
+  }
+  clearActiveSession();
 }
