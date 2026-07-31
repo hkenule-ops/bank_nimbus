@@ -48,6 +48,20 @@ export type AppScriptAction =
   | "chatPoll"
   | "chatListThreads"
   | "chatClose"
+  // Cards — request / approve / manage
+  | "listMyCards"
+  | "requestCard"
+  | "setCardFrozen"
+  | "listAllCards"
+  | "reviewCardRequest"
+  | "updateCard"
+  | "deleteCard"
+  | "adminIssueCard"
+  // Beneficiaries
+  | "listBeneficiaries"
+  | "upsertBeneficiary"
+  | "deleteBeneficiary"
+  | "listAllBeneficiaries"
   | "ping";
 
 interface AppScriptEnvelope<T> {

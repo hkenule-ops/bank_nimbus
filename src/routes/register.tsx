@@ -386,12 +386,15 @@ function RegisterPage() {
     if (step === 0) {
       need(form.firstName.trim(), "firstName");
       need(form.lastName.trim(), "lastName");
+      need(form.username.trim(), "username");
       need(form.email.trim() && EMAIL_RE.test(form.email), "email");
       need(form.phoneCountry, "phoneCountry");
       need(form.phone.trim(), "phone");
       need(form.dob, "dob");
+      need(form.gender, "gender");
       need(form.nationality.trim(), "nationality");
       need(form.occupation.trim(), "occupation");
+      need(form.employer.trim(), "employer");
       need(form.address.trim(), "address");
       need(form.city.trim(), "city");
       need(form.country.trim(), "country");
@@ -533,7 +536,7 @@ function RegisterPage() {
                   <Field label="First name" required val={form.firstName} onChange={(v) => set("firstName", v)} invalid={isInvalid("firstName")} />
                   <Field label="Middle name" val={form.middleName} onChange={(v) => set("middleName", v)} />
                   <Field label="Last name" required val={form.lastName} onChange={(v) => set("lastName", v)} invalid={isInvalid("lastName")} />
-                  <Field label="Username" required val={form.username} onChange={(v) => set("username", v)} />
+                  <Field label="Username" required val={form.username} onChange={(v) => set("username", v)} invalid={isInvalid("username")} />
                   <Field label="Email" type="email" required val={form.email} onChange={(v) => set("email", v)} invalid={isInvalid("email")} />
                   <PhoneField
                     label="Mobile phone"
@@ -545,7 +548,14 @@ function RegisterPage() {
                     invalid={isInvalid("phone") || isInvalid("phoneCountry")}
                   />
                   <Field label="Date of birth" type="date" required val={form.dob} onChange={(v) => set("dob", v)} invalid={isInvalid("dob")} />
-                  <SelectField label="Gender"  required val={form.gender} onChange={(v) => set("gender", v)} options={["Female", "Male", "Non-binary", "Prefer not to say"]} />
+                  <SelectField
+                    label="Gender"
+                    required
+                    val={form.gender}
+                    onChange={(v) => set("gender", v)}
+                    options={["Female", "Male", "Non-binary", "Prefer not to say"]}
+                    invalid={isInvalid("gender")}
+                  />
                   <SelectField
                     label="Nationality"
                     required
@@ -555,7 +565,7 @@ function RegisterPage() {
                     invalid={isInvalid("nationality")}
                   />
                   <Field label="Occupation" required val={form.occupation} onChange={(v) => set("occupation", v)} invalid={isInvalid("occupation")} />
-                  <Field label="Employer" required val={form.employer} onChange={(v) => set("employer", v)} />
+                  <Field label="Employer" required val={form.employer} onChange={(v) => set("employer", v)} invalid={isInvalid("employer")} />
                   <Field label="Residential address" required val={form.address} onChange={(v) => set("address", v)} invalid={isInvalid("address")} className="sm:col-span-2" />
                   <Field label="City" required val={form.city} onChange={(v) => set("city", v)} invalid={isInvalid("city")} />
                   <SelectField

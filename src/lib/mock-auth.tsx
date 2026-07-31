@@ -108,20 +108,49 @@ interface AuthState {
 
 const AuthCtx = createContext<AuthState | null>(null);
 
-const STORAGE_KEY = "bangueherutage_auth_v1";
-const TX_KEY = "bangueherutage_tx_v1";
+/** Browser-tab session only — cleared when the tab/window is closed (banking-style). */
+const STORAGE_KEY = "bangueherutage_auth_v2_session";
+const TX_KEY = "bangueherutage_tx_v2_session";
+/** Legacy permanent keys — purged so old logins do not stick after refresh. */
+const LEGACY_STORAGE_KEYS = ["bangueherutage_auth_v1", "bangueherutage_tx_v1"];
+
+/** Auto sign-out after this much idle time (ms). */
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+/** If the tab stays hidden this long, end the session (left the bank site). */
+const HIDDEN_TIMEOUT_MS = 5 * 60 * 1000;
+
+function sessionStore(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function purgeLegacyLocalAuth() {
+  if (typeof window === "undefined") return;
+  try {
+    for (const k of LEGACY_STORAGE_KEYS) localStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
 
 function readStoredSession(): { user: Customer | null; isAdmin: boolean; transactions: Transaction[] } {
   if (typeof window === "undefined") {
     return { user: null, isAdmin: false, transactions: [] };
   }
+  purgeLegacyLocalAuth();
+  const store = sessionStore();
+  if (!store) return { user: null, isAdmin: false, transactions: [] };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = store.getItem(STORAGE_KEY);
     if (!raw) return { user: null, isAdmin: false, transactions: [] };
     const parsed = JSON.parse(raw) as { user?: Customer | null; isAdmin?: boolean };
     let transactions: Transaction[] = [];
     try {
-      const txRaw = localStorage.getItem(TX_KEY);
+      const txRaw = store.getItem(TX_KEY);
       if (txRaw) transactions = sortTransactionsByDate(JSON.parse(txRaw) as Transaction[]);
     } catch {
       /* ignore */
@@ -133,6 +162,38 @@ function readStoredSession(): { user: Customer | null; isAdmin: boolean; transac
     };
   } catch {
     return { user: null, isAdmin: false, transactions: [] };
+  }
+}
+
+function writeSession(user: Customer | null, isAdmin: boolean) {
+  const store = sessionStore();
+  if (!store) return;
+  try {
+    if (user || isAdmin) store.setItem(STORAGE_KEY, JSON.stringify({ user, isAdmin }));
+    else store.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function writeTx(txs: Transaction[]) {
+  const store = sessionStore();
+  if (!store) return;
+  try {
+    store.setItem(TX_KEY, JSON.stringify(txs));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearSessionStorage() {
+  const store = sessionStore();
+  if (!store) return;
+  try {
+    store.removeItem(STORAGE_KEY);
+    store.removeItem(TX_KEY);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -216,7 +277,7 @@ function stripPassword(c: Customer): Customer {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Initial state must be identical on server and client first paint.
-  // Reading localStorage in useState causes SSR hydration mismatches.
+  // Reading sessionStorage in useState causes SSR hydration mismatches.
   // Session is restored in useEffect; shells wait on `authReady` before redirecting.
   const [user, setUser] = useState<Customer | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -255,11 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const next = stripPassword(match);
           setUser((prev) => {
             const merged = prev ? { ...prev, ...next } : next;
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: merged, isAdmin: false }));
-            } catch {
-              /* ignore */
-            }
+            writeSession(merged, false);
             return merged;
           });
         }
@@ -272,8 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persist = (u: Customer | null, admin: boolean) => {
     setUser(u);
     setIsAdmin(admin);
-    if (u || admin) localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, isAdmin: admin }));
-    else localStorage.removeItem(STORAGE_KEY);
+    writeSession(u, admin);
   };
 
   const loadTx = async (customerId: string) => {
@@ -282,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.ok && Array.isArray(res.data)) {
       const sorted = sortTransactionsByDate(res.data);
       setTransactions(sorted);
-      localStorage.setItem(TX_KEY, JSON.stringify(sorted));
+      writeTx(sorted);
     }
   };
 
@@ -300,7 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(response.data.transactions)) {
           const sorted = sortTransactionsByDate(response.data.transactions);
           setTransactions(sorted);
-          localStorage.setItem(TX_KEY, JSON.stringify(sorted));
+          writeTx(sorted);
         } else {
           await loadTx(customer.customerId);
         }
@@ -316,7 +372,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(u, false);
     const sortedSeed = sortTransactionsByDate(seedTx);
     setTransactions(sortedSeed);
-    localStorage.setItem(TX_KEY, JSON.stringify(sortedSeed));
+    writeTx(sortedSeed);
     return true;
   };
 
@@ -347,7 +403,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const customer = stripPassword(response.data);
         persist(customer, false);
         setTransactions([]);
-        localStorage.setItem(TX_KEY, JSON.stringify([]));
+        writeTx([]);
         return customer;
       }
       throw new Error(response.error || "Registration failed");
@@ -383,11 +439,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(response.data.transactions)) {
           const sorted = sortTransactionsByDate(response.data.transactions);
           setTransactions(sorted);
-          localStorage.setItem(TX_KEY, JSON.stringify(sorted));
+          writeTx(sorted);
         } else if (response.data.transaction) {
           const newTx = sortTransactionsByDate([response.data.transaction, ...transactions]);
           setTransactions(newTx);
-          localStorage.setItem(TX_KEY, JSON.stringify(newTx));
+          writeTx(newTx);
         }
         return;
       }
@@ -408,7 +464,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const newTx = sortTransactionsByDate([tx, ...transactions]);
     setTransactions(newTx);
-    localStorage.setItem(TX_KEY, JSON.stringify(newTx));
+    writeTx(newTx);
     persist(updated, isAdmin);
   };
 
@@ -427,6 +483,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     enabled: authReady && !!user?.customerId && !isAdmin && isAppScriptConfigured(),
   });
 
+  // Banking-style session end: idle timeout + leave-tab timeout.
+  // Session lives in sessionStorage only (survives refresh in this tab, not new tabs / after close).
+  useEffect(() => {
+    if (!authReady) return;
+    if (!user && !isAdmin) return;
+
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const endSession = (reason: string) => {
+      persist(null, false);
+      setTransactions([]);
+      clearSessionStorage();
+      try {
+        // Soft signal for UI pages that listen for forced logout
+        sessionStorage.setItem("bangueherutage_session_ended", reason);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const bumpIdle = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => endSession("idle"), IDLE_TIMEOUT_MS);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (hiddenTimer) clearTimeout(hiddenTimer);
+        hiddenTimer = setTimeout(() => endSession("left"), HIDDEN_TIMEOUT_MS);
+      } else {
+        if (hiddenTimer) {
+          clearTimeout(hiddenTimer);
+          hiddenTimer = null;
+        }
+        bumpIdle();
+      }
+    };
+
+    const activityEvents: Array<keyof WindowEventMap> = [
+      "pointerdown",
+      "keydown",
+      "mousemove",
+      "scroll",
+      "touchstart",
+    ];
+    for (const ev of activityEvents) {
+      window.addEventListener(ev, bumpIdle, { passive: true });
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    bumpIdle();
+
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      if (hiddenTimer) clearTimeout(hiddenTimer);
+      for (const ev of activityEvents) {
+        window.removeEventListener(ev, bumpIdle);
+      }
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- session lifecycle only depends on login state
+  }, [authReady, user?.customerId, isAdmin]);
+
   const value: AuthState = {
     user,
     isAdmin,
@@ -437,11 +556,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout: () => {
       persist(null, false);
       setTransactions([]);
-      try {
-        localStorage.removeItem(TX_KEY);
-      } catch {
-        /* ignore */
-      }
+      clearSessionStorage();
     },
     register: async (data) => registerWithFallback(data),
     updateBalance: async (delta, description, type) => {
