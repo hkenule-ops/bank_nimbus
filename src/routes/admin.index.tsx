@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ function AdminHome() {
       ]);
 
       if (custRes.ok && Array.isArray(custRes.data)) setCustomers(custRes.data);
-      else if (!custRes.ok) toast.error(custRes.error || "Failed to load customers");
+      else if (!custRes.ok) toast.error(userFacingError(custRes.error, "We couldn't load customers. Please try again."));
 
       if (txRes.ok && Array.isArray(txRes.data)) setTransactions(txRes.data);
 
@@ -103,7 +104,7 @@ function AdminHome() {
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "Live statistics from Google Sheets."
-              : "Configure VITE_APP_SCRIPT_URL for live admin data."}
+              : "Live data is unavailable right now. Please try again later."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>

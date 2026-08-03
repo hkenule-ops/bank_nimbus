@@ -49,7 +49,7 @@ import {
   type CardStatus,
 } from "@/lib/cards";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/cards")({
   component: CardsPage,
@@ -101,7 +101,7 @@ function CardsPage() {
       setCards(cardList);
       if (custRes.ok && Array.isArray(custRes.data)) setCustomers(custRes.data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load cards");
+      toast.error(userFacingError(e, "We couldn't load your cards. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ function CardsPage() {
       toast.success("Card approved and issued");
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Approve failed");
+      toast.error(userFacingError(e, "We couldn't approve this request. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -162,7 +162,7 @@ function CardsPage() {
       setRejectOpen(false);
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Reject failed");
+      toast.error(userFacingError(e, "We couldn't reject this request. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -175,7 +175,7 @@ function CardsPage() {
       toast.success(c.status === "Active" ? "Card frozen" : "Card unfrozen");
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
+      toast.error(userFacingError(e, "We couldn't save those changes. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -210,7 +210,7 @@ function CardsPage() {
       setEditOpen(false);
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
+      toast.error(userFacingError(e, "We couldn't save those changes. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -224,7 +224,7 @@ function CardsPage() {
       toast.success("Deleted");
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      toast.error(userFacingError(e, "We couldn't remove that item. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -250,7 +250,7 @@ function CardsPage() {
       setIssueForm({ customerId: "", type: "Debit", last4: "", expiry: "" });
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Issue failed");
+      toast.error(userFacingError(e, "We couldn't issue this card. Please try again."));
     } finally {
       setSaving(false);
     }

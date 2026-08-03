@@ -406,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         writeTx([]);
         return customer;
       }
-      throw new Error(response.error || "Registration failed");
+      throw new Error(response.error || "We couldn't create your account. Please try again.");
     }
 
     const fallbackCustomer = seedCustomer({ ...data, balance: 0, status: "Active" } as Partial<Customer>);
@@ -447,7 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return;
       }
-      throw new Error(response.error || "Transfer failed");
+      throw new Error(response.error || "We couldn't complete that transfer. Please try again.");
     }
 
     const newBal = user.balance + (type === "Credit" ? delta : -delta);

@@ -23,7 +23,7 @@ import {
 import { RefreshCw, Loader2, Pencil, Plus, Trash2, Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
 import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/crypto")({
   component: AdminCryptoPage,
@@ -84,15 +84,15 @@ function AdminCryptoPage() {
     try {
       if (!isAppScriptConfigured()) {
         setAssets([]);
-        toast.error("Configure VITE_APP_SCRIPT_URL to manage crypto assets");
+        toast.error("Crypto settings are unavailable right now. Please try again later.");
         return;
       }
       const res = await appScriptRequest<CryptoAsset[]>("listCryptoAssets", {});
       if (res.ok && Array.isArray(res.data)) setAssets(res.data);
       else {
-        const err = res.error || "Failed to load crypto assets";
+        const err = res.error || "We couldn't load market data. Please try again.";
         if (String(err).includes("Unknown action")) {
-          toast.error("Backend outdated — paste latest Code.gs and redeploy the web app, then run setupSheets()");
+          toast.error("Crypto data couldn't be loaded. Please try again later.");
         } else {
           toast.error(err);
         }
@@ -146,7 +146,7 @@ function AdminCryptoPage() {
         setOpen(false);
         void load();
       } else {
-        toast.error(res.error || "Save failed");
+        toast.error(userFacingError(res.error, "We couldn't save those changes. Please try again."));
       }
     } finally {
       setSaving(false);
@@ -160,7 +160,7 @@ function AdminCryptoPage() {
       toast.success("Asset removed");
       void load();
     } else {
-      toast.error(res.error || "Delete failed");
+      toast.error(userFacingError(res.error, "We couldn't remove that item. Please try again."));
     }
   };
 
@@ -191,7 +191,7 @@ function AdminCryptoPage() {
           </div>
         ) : assets.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            No assets yet. Add one or run setupSheets() on Apps Script.
+            No assets yet. Add one to get started.
           </div>
         ) : (
           <ul className="divide-y divide-border">

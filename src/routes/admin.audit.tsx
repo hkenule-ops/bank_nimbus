@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ function AuditPage() {
       }
       const res = await appScriptRequest<AuditEntry[]>("listAudit", { limit: 300 });
       if (res.ok && Array.isArray(res.data)) setRows(res.data);
-      else toast.error(res.error || "Failed to load audit log");
+      else toast.error(userFacingError(res.error, "We couldn't load the activity log. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ function AuditPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "Every admin and system action recorded in Google Sheets."
-              : "Configure VITE_APP_SCRIPT_URL to load audit events."}
+              : "Audit history is unavailable right now. Please try again later."}
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -44,7 +44,7 @@ import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
 import type { Customer, Transaction } from "@/lib/mock-auth";
 import { sortTransactionsByDate } from "@/lib/mock-auth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/admin/customers")({
@@ -264,7 +264,7 @@ function CustomersPage() {
       }
       const res = await appScriptRequest<Customer[]>("listCustomers", {});
       if (res.ok && Array.isArray(res.data)) setCustomers(res.data);
-      else toast.error(res.error || "Failed to load customers");
+      else toast.error(userFacingError(res.error, "We couldn't load customers. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -281,7 +281,7 @@ function CustomersPage() {
       if (res.ok) {
         toast.success(`Status → ${status}`);
         void load();
-      } else toast.error(res.error || "Update failed");
+      } else toast.error(userFacingError(res.error, "We couldn't save those changes. Please try again."));
     } finally {
       setBusyId(null);
     }
@@ -337,7 +337,7 @@ function CustomersPage() {
         setEditing(null);
         void load();
       } else {
-        toast.error(res.error || "Update failed");
+        toast.error(userFacingError(res.error, "We couldn't save those changes. Please try again."));
       }
     } finally {
       setSaving(false);
@@ -356,7 +356,7 @@ function CustomersPage() {
         setLedgerTxs(sortTransactionsByDate(res.data));
       } else {
         setLedgerTxs([]);
-        if (res.error) toast.error(res.error);
+        if (res.error) toast.error(userFacingError(res.error, "Something went wrong. Please try again."));
       }
     } finally {
       setLedgerLoading(false);
@@ -449,7 +449,7 @@ function CustomersPage() {
           void load();
         } else {
           // Fallback: recreate via credit/debit if update action is not on the script yet
-          toast.error(res.error || "Update failed. Ensure adminUpdateTransaction is deployed on Apps Script.");
+          toast.error(userFacingError(res.error, "We couldn't update that transaction. Please try again."));
         }
       } else {
         // Prefer full create; fall back to adminCredit / adminDebit with extra fields
@@ -483,7 +483,7 @@ function CustomersPage() {
           await loadCustomerTxs(ledgerCustomer.customerId);
           void load();
         } else {
-          toast.error(res.error || "Could not create transaction");
+          toast.error(userFacingError(res.error, "We couldn't create that transaction. Please try again."));
         }
       }
     } finally {
@@ -506,7 +506,7 @@ function CustomersPage() {
         await loadCustomerTxs(ledgerCustomer.customerId);
         void load();
       } else {
-        toast.error(res.error || "Delete failed. Ensure adminDeleteTransaction is deployed.");
+        toast.error(userFacingError(res.error, "We couldn't delete that transaction. Please try again."));
       }
     } finally {
       setLedgerBusy(false);
@@ -524,7 +524,7 @@ function CustomersPage() {
         setDeleting(null);
         void load();
       } else {
-        toast.error(res.error || "Delete failed");
+        toast.error(userFacingError(res.error, "We couldn't remove that item. Please try again."));
       }
     } finally {
       setDeleteBusy(false);
@@ -583,7 +583,7 @@ function CustomersPage() {
           <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
             {isAppScriptConfigured()
               ? "Edit any field, adjust balances, suspend or delete."
-              : "Configure VITE_APP_SCRIPT_URL to load customers."}
+              : "Customer data is unavailable right now. Please try again later."}
           </p>
         </div>
         <div className="flex items-center gap-2">

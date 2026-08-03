@@ -27,7 +27,7 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/crypto")({
   head: () => ({ meta: [{ title: "Crypto — Bangue Herutage Bank" }] }),
@@ -159,7 +159,7 @@ function CryptoPage() {
         docs: [{ type: idType, fileName: docFileName.trim() }],
       });
       if (!res.ok || !res.data) {
-        toast.error(res.error || "Verification failed");
+        toast.error(userFacingError(res.error, "We couldn't complete verification. Please try again."));
         return;
       }
       setCryptoStatus(res.data.status);

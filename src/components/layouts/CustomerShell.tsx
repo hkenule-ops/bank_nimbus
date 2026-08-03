@@ -1,7 +1,6 @@
 import { Link, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/mock-auth";
-import { Logo } from "@/components/site/Logo";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -25,6 +24,62 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+
+/** Matches AdminShell mark — sized for the narrow sidebar. */
+function SidebarLogo({ className, compact }: { className?: string; compact?: boolean }) {
+  return (
+    <Link
+      to="/dashboard"
+      className={cn(
+        "flex items-center gap-2 rounded-lg px-1.5 py-1 transition-opacity hover:opacity-90 select-none",
+        className,
+      )}
+    >
+      <svg
+        viewBox="0 0 100 120"
+        className={cn("shrink-0", compact ? "h-7 w-auto" : "h-8 w-auto")}
+        aria-hidden="true"
+      >
+        <path
+          d="M50 4 L92 18 V56 C92 86 74 106 50 116 C26 106 8 86 8 56 V18 Z"
+          fill="none"
+          stroke="#C9AA54"
+          strokeWidth="4"
+        />
+        <text
+          x="50"
+          y="80"
+          textAnchor="middle"
+          fontFamily="'Times New Roman', Georgia, serif"
+          fontWeight="700"
+          fontSize="63"
+          fill="#C9AA54"
+        >
+          H
+        </text>
+      </svg>
+      {!compact && (
+        <>
+          <div className="h-6 w-px shrink-0 bg-sidebar-border" />
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span
+              className="truncate text-[14px] font-medium tracking-[0.14em] text-sidebar-foreground"
+              style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
+            >
+              BANGUE
+            </span>
+            <span
+              className="truncate text-[9px] tracking-[0.1em] text-[#C9AA54]"
+              style={{ fontFamily: "'Times New Roman', Georgia, serif" }}
+            >
+              HERUTAGE BANK
+            </span>
+          </div>
+        </>
+      )}
+    </Link>
+  );
+}
 
 const items: ReadonlyArray<{ to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }> = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -108,7 +163,7 @@ export function CustomerShell({ children }: { children?: ReactNode }) {
       <div className="flex min-w-0">
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-[100dvh] w-64 shrink-0 flex-col border-r border-border/60 bg-sidebar p-4 md:flex">
-          <Logo className="mb-6 px-2" />
+          <SidebarLogo className="mb-6" />
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <NavLinks />
           </div>
@@ -168,11 +223,11 @@ export function CustomerShell({ children }: { children?: ReactNode }) {
         <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col bg-sidebar p-0">
           <SheetHeader className="border-b border-sidebar-border px-4 py-4 text-left">
             <div className="flex items-center justify-between gap-2">
-              <Logo />
+              <SidebarLogo />
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9"
+                className="h-9 w-9 shrink-0"
                 aria-label="Close menu"
                 onClick={() => setMenuOpen(false)}
               >

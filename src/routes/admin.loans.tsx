@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,14 +130,14 @@ function AdminLoansPage() {
       status: statusFilter === "all" ? "" : statusFilter,
     });
     if (res.ok && Array.isArray(res.data)) setApps(res.data);
-    else toast.error(res.error || "Failed to load applications");
+    else toast.error(userFacingError(res.error, "Failed to load applications"));
   }, [statusFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       if (!isAppScriptConfigured()) {
-        toast.error("Configure VITE_APP_SCRIPT_URL");
+        toast.error("This service is temporarily unavailable. Please try again later.");
         return;
       }
       await Promise.all([loadProducts(), loadApps()]);
@@ -189,7 +190,7 @@ function AdminLoansPage() {
         toast.success(mode === "edit" ? "Product updated" : "Product created");
         setOpen(false);
         void loadProducts();
-      } else toast.error(res.error || "Save failed");
+      } else toast.error(userFacingError(res.error, "We couldn't save those changes. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -201,7 +202,7 @@ function AdminLoansPage() {
     if (res.ok) {
       toast.success("Product removed");
       void loadProducts();
-    } else toast.error(res.error || "Delete failed");
+    } else toast.error(userFacingError(res.error, "We couldn't remove that item. Please try again."));
   };
 
   const approve = async (app: LoanApp) => {
@@ -211,7 +212,7 @@ function AdminLoansPage() {
       if (res.ok) {
         toast.success("Approved — principal disbursed to customer");
         void loadApps();
-      } else toast.error(res.error || "Approval failed");
+      } else toast.error(userFacingError(res.error, "We couldn't approve this application. Please try again."));
     } finally {
       setReviewId(null);
     }
@@ -232,7 +233,7 @@ function AdminLoansPage() {
         setRejectTarget(null);
         setRejectReason("");
         void loadApps();
-      } else toast.error(res.error || "Reject failed");
+      } else toast.error(userFacingError(res.error, "We couldn't reject this request. Please try again."));
     } finally {
       setReviewId(null);
     }

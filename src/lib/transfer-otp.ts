@@ -228,7 +228,7 @@ export async function verifyTransferOtp(
       "verifyTransferOtp",
       { id: sessionId, code },
     );
-    if (!res.ok) return { ok: false, error: res.error ?? "Verification failed" };
+    if (!res.ok) return { ok: false, error: res.error ?? "We couldn't complete verification. Please try again." };
     const session = res.data?.session ? normalizeSession(res.data.session) : undefined;
     return { ok: true, session, completed: res.data?.completed };
   }
@@ -398,7 +398,7 @@ export async function beginPendingTransfer(input: {
       user?: unknown;
       transactions?: unknown;
     }>("beginPendingTransfer", input);
-    if (!res.ok) throw new Error(res.error || "Could not start transfer");
+    if (!res.ok) throw new Error(res.error || "We couldn't start this transfer. Please try again.");
     // If already cleared, backend returns transfer_ result shape
     if (res.data?.user || (res.data && !res.data.session && res.data.transaction)) {
       markTransferClearedLocal(input.customerId);

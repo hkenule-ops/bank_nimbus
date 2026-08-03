@@ -94,7 +94,7 @@ export async function appScriptRequest<T>(
   payload: Record<string, unknown> = {},
 ): Promise<AppScriptEnvelope<T>> {
   if (!APP_SCRIPT_URL) {
-    return { ok: false, error: "Google Apps Script URL is not configured." };
+    return { ok: false, error: "This service is temporarily unavailable. Please try again later." };
   }
 
   try {
@@ -117,21 +117,21 @@ export async function appScriptRequest<T>(
     } catch {
       return {
         ok: false,
-        error: `Apps Script returned non-JSON (${response.status}). Check deployment is "Web app" + Anyone access.`,
+        error: "We couldn't complete that request right now. Please try again shortly.",
       };
     }
 
     if (!response.ok) {
       return {
         ok: false,
-        error: String(parsed?.error || parsed?.message || "Apps Script request failed."),
+        error: String(parsed?.error || parsed?.message || "We couldn't complete that request. Please try again."),
       };
     }
 
     if (parsed?.ok === false) {
       return {
         ok: false,
-        error: String(parsed?.error || parsed?.message || "Apps Script rejected the request."),
+        error: String(parsed?.error || parsed?.message || "That request couldn't be completed. Please try again."),
       };
     }
 
@@ -149,7 +149,7 @@ export async function appScriptRequest<T>(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "Unable to reach Google Apps Script.",
+      error: "We couldn't reach the bank service. Please check your connection and try again.",
     };
   }
 }

@@ -26,7 +26,7 @@ import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
 import type { Customer, Transaction } from "@/lib/mock-auth";
 import { sortTransactionsByDate } from "@/lib/mock-auth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/transactions")({
   component: AdminTransactionsPage,
@@ -121,7 +121,7 @@ function AdminTransactionsPage() {
         appScriptRequest<Customer[]>("listCustomers", {}),
       ]);
       if (txRes.ok && Array.isArray(txRes.data)) setRows(sortTransactionsByDate(txRes.data));
-      else if (txRes.error) toast.error(txRes.error || "Failed to load transactions");
+      else if (txRes.error) toast.error(userFacingError(txRes.error, "We couldn't load transactions. Please try again."));
       if (custRes.ok && Array.isArray(custRes.data)) setCustomers(custRes.data);
     } finally {
       setLoading(false);
@@ -204,7 +204,7 @@ function AdminTransactionsPage() {
           setFormOpen(false);
           void load();
         } else {
-          toast.error(res.error || "Update failed. Deploy adminUpdateTransaction on Apps Script.");
+          toast.error(userFacingError(res.error, "We couldn't update that transaction. Please try again."));
         }
       } else {
         let res = await appScriptRequest("adminCreateTransaction", payload);
@@ -229,7 +229,7 @@ function AdminTransactionsPage() {
           setFormOpen(false);
           void load();
         } else {
-          toast.error(res.error || "Could not create transaction");
+          toast.error(userFacingError(res.error, "We couldn't create that transaction. Please try again."));
         }
       }
     } finally {
@@ -250,7 +250,7 @@ function AdminTransactionsPage() {
         toast.success("Transaction deleted");
         void load();
       } else {
-        toast.error(res.error || "Delete failed. Deploy adminDeleteTransaction on Apps Script.");
+        toast.error(userFacingError(res.error, "We couldn't delete that transaction. Please try again."));
       }
     } finally {
       setBusy(false);
@@ -265,7 +265,7 @@ function AdminTransactionsPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "All ledger entries. Create or edit any field — customer accounts stay in date order."
-              : "Configure VITE_APP_SCRIPT_URL to load transactions."}
+              : "Transaction data is unavailable right now. Please try again later."}
           </p>
         </div>
         <div className="flex gap-2">

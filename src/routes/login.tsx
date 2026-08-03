@@ -59,7 +59,7 @@ function LoginPage() {
     const identifier = id.trim();
     const password = pw;
     if (!identifier || !password) {
-      toast.error("Enter your email/username and password");
+      toast.error("Please enter your email or username and password.");
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
@@ -82,7 +82,7 @@ function LoginPage() {
         return;
       }
 
-      toast.error("Invalid credentials");
+      toast.error("Those sign-in details don't match our records. Please try again.");
       setShake(true);
       setTimeout(() => setShake(false), 400);
     } finally {

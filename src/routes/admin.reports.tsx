@@ -29,7 +29,7 @@ function ReportsPage() {
         appScriptRequest<(Transaction & { customerName?: string })[]>("listAllTransactions", {}),
       ]);
       if (c.ok && Array.isArray(c.data)) setCustomers(c.data);
-      else toast.error(c.error || "Failed to load customers");
+      else toast.error(c.error || "We couldn't load customers. Please try again.");
       if (t.ok && Array.isArray(t.data)) setTransactions(t.data);
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ function ReportsPage() {
       ) : !isAppScriptConfigured() ? (
         <Card className="flex flex-col items-center gap-2 p-12 text-sm text-muted-foreground">
           <FileText className="h-8 w-8 opacity-40" />
-          Configure VITE_APP_SCRIPT_URL to generate reports.
+          Reports are unavailable right now. Please try again later.
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">

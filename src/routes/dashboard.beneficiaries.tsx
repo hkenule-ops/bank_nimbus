@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/mock-auth";
 import { Card } from "@/components/ui/card";
@@ -45,7 +46,7 @@ function BenPage() {
       const rows = await listBeneficiaries(user.customerId);
       setList(rows);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load beneficiaries");
+      toast.error(userFacingError(e, "We couldn't load your saved recipients. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ function BenPage() {
       toast.success("Beneficiary saved");
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save");
+      toast.error(userFacingError(err, "We couldn't save that recipient. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -114,7 +115,7 @@ function BenPage() {
       setEditOpen(false);
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Update failed");
+      toast.error(userFacingError(err, "We couldn't save those changes. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -128,7 +129,7 @@ function BenPage() {
       toast.success("Beneficiary removed");
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
+      toast.error(userFacingError(err, "We couldn't remove that item. Please try again."));
     } finally {
       setBusyId(null);
     }

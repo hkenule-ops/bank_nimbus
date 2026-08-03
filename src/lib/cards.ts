@@ -118,7 +118,7 @@ export async function requestCard(input: {
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest<BankCard>("requestCard", { ...card });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Card request failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't submit your card request. Please try again.");
   }
 
   const all = readLocal();
@@ -135,14 +135,14 @@ export async function setCardFrozen(cardId: string, frozen: boolean): Promise<Ba
       frozen,
     });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Could not update card");
+    if (!res.ok) throw new Error(res.error || "We couldn't update this card. Please try again.");
   }
 
   const all = readLocal();
   const idx = all.findIndex((c) => c.id === cardId);
-  if (idx < 0) throw new Error("Card not found");
+  if (idx < 0) throw new Error("We couldn't find that card.");
   if (all[idx].status !== "Active" && all[idx].status !== "Frozen") {
-    throw new Error("Only issued cards can be frozen or unfrozen");
+    throw new Error("This card isn't active yet, so it can't be frozen or unfrozen.");
   }
   all[idx] = {
     ...all[idx],
@@ -168,13 +168,13 @@ export async function reviewCardRequest(
       expiry: opts?.expiry,
     });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Review failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't process this card request. Please try again.");
   }
 
   const all = readLocal();
   const idx = all.findIndex((c) => c.id === cardId);
-  if (idx < 0) throw new Error("Request not found");
-  if (all[idx].status !== "Pending") throw new Error("Request is not pending");
+  if (idx < 0) throw new Error("We couldn't find that card request.");
+  if (all[idx].status !== "Pending") throw new Error("This request has already been reviewed.");
 
   const now = new Date().toISOString();
   if (decision === "reject") {
@@ -230,7 +230,7 @@ export async function adminIssueCard(input: {
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest<BankCard>("adminIssueCard", { ...card });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Issue failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't issue this card. Please try again.");
   }
 
   const all = readLocal();
@@ -249,12 +249,12 @@ export async function updateCard(
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest<BankCard>("updateCard", { id: cardId, ...patch });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Update failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't save those changes. Please try again.");
   }
 
   const all = readLocal();
   const idx = all.findIndex((c) => c.id === cardId);
-  if (idx < 0) throw new Error("Card not found");
+  if (idx < 0) throw new Error("We couldn't find that card.");
   all[idx] = {
     ...all[idx],
     ...patch,
@@ -268,7 +268,7 @@ export async function updateCard(
 export async function deleteCard(cardId: string): Promise<void> {
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest("deleteCard", { id: cardId });
-    if (!res.ok) throw new Error(res.error || "Delete failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't remove that item. Please try again.");
     return;
   }
   writeLocal(readLocal().filter((c) => c.id !== cardId));

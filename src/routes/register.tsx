@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/mock-auth";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 import { appScriptRequest, isAppScriptConfigured } from "@/lib/appscript";
 
 // Converts ISO 2-letter country code (e.g., 'US') to flag emoji (e.g., '🇺🇸')
@@ -338,12 +338,10 @@ function RegisterPage() {
       otpSentForEmail.current = form.email;
       setCooldown(RESEND_COOLDOWN);
       toast.success(
-        isDemoMode
-          ? `Demo mode — use code ${DEMO_OTP} to continue`
-          : `Verification code sent to ${form.email}`
+        `Verification code sent to ${form.email}`
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not send verification code");
+      toast.error(userFacingError(err, "We couldn't send a verification code. Please try again."));
     } finally {
       setOtpSending(false);
     }
@@ -443,11 +441,7 @@ function RegisterPage() {
       try {
         const valid = await verifyEmailOtp(form.email, otp);
         if (!valid) {
-          setOtpError(
-            isDemoMode
-              ? `That code is incorrect. In demo mode, use ${DEMO_OTP}.`
-              : "That code is incorrect or has expired. Please try again."
-          );
+          setOtpError("That code is incorrect or has expired. Please try again.");
           triggerShake();
           return;
         }
@@ -629,7 +623,7 @@ function RegisterPage() {
                 <div className="flex flex-col items-center py-4">
                   {isDemoMode && (
                     <p className="mb-4 text-sm text-muted-foreground">
-                      Demo code: <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
+                      For this session, use code <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
                     </p>
                   )}
                   <InputOTP

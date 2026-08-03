@@ -84,7 +84,7 @@ function AdminOtpPage() {
             Issue 6-digit codes for each of the {TOTAL_OTP_STAGES} security layers on customer transfers.
             {!isAppScriptConfigured() && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
-                Demo mode — sessions are stored in this browser (open admin + customer in the same profile, or configure VITE_APP_SCRIPT_URL).
+                Transfer verification sessions for customers who need a one-time code.
               </span>
             )}
           </p>

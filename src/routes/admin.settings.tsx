@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ function SettingsPage() {
         setAdminUsername(res.data.admin_username || "");
         setAdminPassword("");
       } else {
-        toast.error(res.error || "Failed to load settings");
+        toast.error(userFacingError(res.error, "Failed to load settings"));
       }
     } finally {
       setLoading(false);
@@ -50,7 +51,7 @@ function SettingsPage() {
 
   const save = async () => {
     if (!isAppScriptConfigured()) {
-      toast.error("Apps Script is not configured");
+      toast.error("This service is temporarily unavailable. Please try again later.");
       return;
     }
     setSaving(true);
@@ -87,7 +88,7 @@ function SettingsPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {isAppScriptConfigured()
               ? "Bank identity and admin credentials stored in the Config sheet."
-              : "Configure VITE_APP_SCRIPT_URL to manage settings."}
+              : "Settings are unavailable right now. Please try again later."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>

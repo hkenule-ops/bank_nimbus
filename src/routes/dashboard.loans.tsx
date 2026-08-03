@@ -30,7 +30,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/loans")({
   head: () => ({ meta: [{ title: "Loans — Bangue Herutage Bank" }] }),
@@ -238,7 +238,7 @@ function LoansPage() {
     setBusy(true);
     try {
       if (!isAppScriptConfigured()) {
-        toast.error("Banking backend is not configured");
+        toast.error("This service is temporarily unavailable. Please try again later.");
         return;
       }
       const res = await appScriptRequest<LoanApp>("applyLoan", {
@@ -252,7 +252,7 @@ function LoansPage() {
         docs,
       });
       if (!res.ok || !res.data) {
-        toast.error(res.error || "Application failed");
+        toast.error(userFacingError(res.error, "We couldn't submit your loan application. Please try again."));
         return;
       }
       toast.success("Application submitted — pending bank review. Funds are not disbursed until approved.");
@@ -276,7 +276,7 @@ function LoansPage() {
         amount: pay,
       });
       if (!res.ok) {
-        toast.error(res.error || "Payment failed");
+        toast.error(userFacingError(res.error, "We couldn't process that payment. Please try again."));
         return;
       }
       toast.success(`Payment of ${format(pay)} applied`);

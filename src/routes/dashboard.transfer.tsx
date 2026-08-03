@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { userFacingError } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/lib/mock-auth";
 import { Card } from "@/components/ui/card";
@@ -301,7 +302,7 @@ function TransferPage() {
         );
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Transfer could not be started");
+      toast.error(userFacingError(err, "We couldn't start this transfer. Please try again."));
     } finally {
       setStarting(false);
     }

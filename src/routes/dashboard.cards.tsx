@@ -24,7 +24,7 @@ import {
   XCircle,
   CheckCircle2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, userFacingError } from "@/lib/utils";
 import {
   listMyCards,
   requestCard,
@@ -89,7 +89,7 @@ function CardsPage() {
       const list = await listMyCards(user.customerId);
       setCards(list);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load cards");
+      toast.error(userFacingError(e, "We couldn't load your cards. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ function CardsPage() {
       setReqNote("");
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Request failed");
+      toast.error(userFacingError(e, "We couldn't submit your request. Please try again."));
     } finally {
       setRequesting(false);
     }
@@ -141,7 +141,7 @@ function CardsPage() {
       toast.success(card.status === "Active" ? "Card frozen" : "Card unfrozen");
       void load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
+      toast.error(userFacingError(e, "We couldn't save those changes. Please try again."));
     } finally {
       setBusyId(null);
     }

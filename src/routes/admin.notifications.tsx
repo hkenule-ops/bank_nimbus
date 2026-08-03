@@ -40,7 +40,7 @@ function NotificationsPage() {
 
   const save = async () => {
     if (!isAppScriptConfigured()) {
-      toast.error("Apps Script is not configured");
+      toast.error("This service is temporarily unavailable. Please try again later.");
       return;
     }
     setSaving(true);
@@ -54,7 +54,7 @@ function NotificationsPage() {
         value: message,
       });
       if (t.ok && m.ok) toast.success("Announcement saved to Config sheet");
-      else toast.error(t.error || m.error || "Save failed");
+      else toast.error(t.error || m.error || "We couldn't save those changes. Please try again.");
     } finally {
       setSaving(false);
     }

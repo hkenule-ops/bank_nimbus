@@ -78,7 +78,7 @@ export async function upsertBeneficiary(input: {
   const name = input.name.trim();
   const account = input.account.trim();
   const bank = input.bank.trim() || "Bangue Herutage Bank";
-  if (!name || !account) throw new Error("Name and account number are required");
+  if (!name || !account) throw new Error("Please enter the recipient's name and account number.");
 
   const now = new Date().toISOString();
 
@@ -93,13 +93,13 @@ export async function upsertBeneficiary(input: {
       currency: input.currency?.trim() || undefined,
     });
     if (res.ok && res.data) return res.data;
-    if (!res.ok) throw new Error(res.error || "Could not save beneficiary");
+    if (!res.ok) throw new Error(res.error || "We couldn't save this recipient. Please try again.");
   }
 
   const all = readLocal();
   if (input.id) {
     const idx = all.findIndex((b) => b.id === input.id && b.customerId === input.customerId);
-    if (idx < 0) throw new Error("Beneficiary not found");
+    if (idx < 0) throw new Error("That saved recipient could not be found.");
     all[idx] = {
       ...all[idx],
       name,
@@ -132,7 +132,7 @@ export async function upsertBeneficiary(input: {
 export async function deleteBeneficiary(id: string, customerId?: string): Promise<void> {
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest("deleteBeneficiary", { id, customerId });
-    if (!res.ok) throw new Error(res.error || "Delete failed");
+    if (!res.ok) throw new Error(res.error || "We couldn't remove that item. Please try again.");
     return;
   }
   writeLocal(
