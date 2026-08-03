@@ -62,6 +62,9 @@ export interface Customer {
   fundsProofDocName?: string;
   selfieDocName?: string;
   idDocName?: string;
+  twoFactorEnabled?: boolean;
+  /** Server session id for this browser login */
+  sessionId?: string;
 }
 
 export interface Transaction {
@@ -346,12 +349,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!identifier || !password) return false;
 
     if (isAppScriptConfigured()) {
-      const response = await appScriptRequest<Customer & { transactions?: Transaction[] }>("login", {
+      const response = await appScriptRequest<Customer & { transactions?: Transaction[]; sessionId?: string }>("login", {
         identifier,
         password,
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+        deviceLabel: typeof navigator !== "undefined" ? undefined : "Server",
       });
       if (response.ok && response.data) {
-        const customer = stripPassword(response.data);
+        const customer = stripPassword({
+          ...response.data,
+          sessionId: response.data.sessionId || (response.data as Customer).sessionId,
+        });
         persist(customer, false);
         if (Array.isArray(response.data.transactions)) {
           const sorted = sortTransactionsByDate(response.data.transactions);

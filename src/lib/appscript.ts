@@ -62,6 +62,13 @@ export type AppScriptAction =
   | "upsertBeneficiary"
   | "deleteBeneficiary"
   | "listAllBeneficiaries"
+  // Profile security
+  | "changePassword"
+  | "setTwoFactor"
+  | "listMySessions"
+  | "revokeSession"
+  | "revokeOtherSessions"
+  | "touchSession"
   | "ping";
 
 interface AppScriptEnvelope<T> {
