@@ -159,23 +159,23 @@ export function normalizeSession(s: TransferOtpSession): TransferOtpSession {
 
 /** Fetch a single session by id. */
 export async function getTransferOtpSession(id: string): Promise<TransferOtpSession | null> {
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<TransferOtpSession>("getTransferOtp", { id });
-    if (res.ok && res.data) return normalizeSession(res.data);
+  if (!isAppScriptConfigured()) {
+    const found = readLocal().find((s) => s.id === id);
+    return found ? normalizeSession(found) : null;
   }
-  const found = readLocal().find((s) => s.id === id);
-  return found ? normalizeSession(found) : null;
+  const res = await appScriptRequest<TransferOtpSession>("getTransferOtp", { id });
+  if (res.ok && res.data) return normalizeSession(res.data);
+  return null;
 }
 
 /** List all pending (and recent) sessions — admin side. */
 export async function listTransferOtpSessions(): Promise<TransferOtpSession[]> {
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<TransferOtpSession[]>("listTransferOtp", {});
-    if (res.ok && res.data) {
-      return (Array.isArray(res.data) ? res.data : []).map(normalizeSession);
-    }
+  if (!isAppScriptConfigured()) return readLocal().map(normalizeSession);
+  const res = await appScriptRequest<TransferOtpSession[]>("listTransferOtp", {});
+  if (res.ok && res.data) {
+    return (Array.isArray(res.data) ? res.data : []).map(normalizeSession);
   }
-  return readLocal().map(normalizeSession);
+  return [];
 }
 
 /**
@@ -228,7 +228,9 @@ export async function verifyTransferOtp(
       "verifyTransferOtp",
       { id: sessionId, code },
     );
-    if (!res.ok) return { ok: false, error: res.error ?? "We couldn't complete verification. Please try again." };
+    if (!res.ok) {
+      return { ok: false, error: res.error ?? "We couldn't complete verification. Please try again." };
+    }
     const session = res.data?.session ? normalizeSession(res.data.session) : undefined;
     return { ok: true, session, completed: res.data?.completed };
   }
@@ -337,19 +339,14 @@ export async function getActiveTransferSession(
   customerId: string,
 ): Promise<TransferOtpSession | null> {
   if (!customerId) return null;
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<TransferOtpSession | null>("getActiveTransferSession", {
-      customerId,
-    });
-    if (res.ok && res.data && (res.data as TransferOtpSession).id) {
-      return normalizeSession(res.data as TransferOtpSession);
-    }
-    return null;
+  if (!isAppScriptConfigured()) return null;
+  const res = await appScriptRequest<TransferOtpSession | null>("getActiveTransferSession", {
+    customerId,
+  });
+  if (res.ok && res.data && (res.data as TransferOtpSession).id) {
+    return normalizeSession(res.data as TransferOtpSession);
   }
-  const all = readLocal()
-    .filter((s) => s.customerId === customerId && s.status === "pending")
-    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-  return all[0] ? normalizeSession(all[0]) : null;
+  return null;
 }
 
 /** Has this customer completed full OTP clearance (never asked again)? */
@@ -358,6 +355,7 @@ export async function getTransferClearance(customerId: string): Promise<boolean>
   if (isAppScriptConfigured()) {
     const res = await appScriptRequest<{ cleared: boolean }>("getTransferClearance", { customerId });
     if (res.ok && res.data) return !!res.data.cleared;
+    return false;
   }
   try {
     return localStorage.getItem(`bangue_transfer_cleared_${customerId}`) === "1";
@@ -390,38 +388,56 @@ export async function beginPendingTransfer(input: {
   transaction?: { id: string; status: string; description: string };
   user?: unknown;
 }> {
-  if (isAppScriptConfigured()) {
-    const res = await appScriptRequest<{
-      cleared?: boolean;
-      session?: TransferOtpSession;
-      transaction?: { id: string; status: string; description: string };
-      user?: unknown;
-      transactions?: unknown;
-    }>("beginPendingTransfer", input);
-    if (!res.ok) throw new Error(res.error || "We couldn't start this transfer. Please try again.");
-    // If already cleared, backend returns transfer_ result shape
-    if (res.data?.user || (res.data && !res.data.session && res.data.transaction)) {
-      markTransferClearedLocal(input.customerId);
-      return { cleared: true, transaction: res.data.transaction as never, user: res.data.user };
-    }
-    if (res.data?.session) {
-      rememberActiveSession(res.data.session.id);
-      return {
-        cleared: false,
-        resumed: !!(res.data as { resumed?: boolean }).resumed,
-        session: normalizeSession(res.data.session),
-        transaction: res.data.transaction as never,
-      };
-    }
+  if (!isAppScriptConfigured()) {
+    throw new Error("Bank service is not configured. Set VITE_APP_SCRIPT_URL and redeploy.");
   }
 
-  // Local fallback
-  const cleared = await getTransferClearance(input.customerId);
-  if (cleared) return { cleared: true };
+  const res = await appScriptRequest<{
+    cleared?: boolean;
+    session?: TransferOtpSession;
+    transaction?: { id: string; status: string; description: string };
+    user?: unknown;
+    transactions?: unknown;
+    resumed?: boolean;
+  }>("beginPendingTransfer", {
+    ...input,
+    // GAS accepts both; send both for compatibility
+    description: input.desc,
+    desc: input.desc,
+  });
 
-  const session = await createTransferOtpSession(input);
-  const resumed = session.stage > 1 || session.codes.some((c) => isLayerVerified(c));
-  return { cleared: false, session, resumed };
+  if (!res.ok) {
+    throw new Error(res.error || "We couldn't start this transfer. Please try again.");
+  }
+
+  const data = res.data;
+  if (!data) {
+    throw new Error("Empty response from bank service. Redeploy the Apps Script web app.");
+  }
+
+  // Already fully cleared on the server — funds moved immediately
+  if (data.user || (data.transaction && !data.session) || data.cleared) {
+    markTransferClearedLocal(input.customerId);
+    return {
+      cleared: true,
+      transaction: data.transaction as never,
+      user: data.user,
+    };
+  }
+
+  if (data.session) {
+    rememberActiveSession(data.session.id);
+    return {
+      cleared: false,
+      resumed: !!data.resumed,
+      session: normalizeSession(data.session),
+      transaction: data.transaction as never,
+    };
+  }
+
+  throw new Error(
+    "Bank service returned an unexpected response. Confirm the web app is deployed (Anyone) and setupSheets() has been run.",
+  );
 }
 
 export async function declinePendingTransfer(sessionId: string): Promise<void> {

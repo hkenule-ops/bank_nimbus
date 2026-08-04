@@ -81,7 +81,7 @@ type LoanTypeRow = {
   blurb: string;
 };
 
-type LoanDoc = { type: string; fileName: string };
+type LoanDoc = { type: string; fileName: string; name?: string; data?: string; mimeType?: string; url?: string };
 
 type LoanApp = {
   id: string;
@@ -211,12 +211,27 @@ function LoansPage() {
     .reduce((s, l) => s + Number(l.balance), 0);
   const pendingCount = loans.filter((l) => l.status === "Pending").length;
 
-  const addDoc = () => {
-    const name = docName.trim();
-    if (!name) return toast.error("Enter the document file name");
-    setDocs((d) => [...d, { type: docType, fileName: name }]);
-    setDocName("");
-    toast.success("Document added to application");
+  const addDoc = async (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return toast.error("Choose a file to attach");
+    try {
+      const { fileToUploadPayload } = await import("@/lib/drive-upload");
+      const payload = await fileToUploadPayload(file);
+      setDocs((d) => [
+        ...d,
+        {
+          type: docType,
+          fileName: payload.name,
+          name: payload.name,
+          data: payload.data,
+          mimeType: payload.type,
+        },
+      ]);
+      setDocName("");
+      toast.success(`${payload.name} ready to upload`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not read file");
+    }
   };
 
   const apply = async (e: React.FormEvent) => {
@@ -524,7 +539,7 @@ function LoansPage() {
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Standard underwriting pack: government ID, income proof, and address proof. Enter the file
-                name of each document you are submitting (min. 2).
+                file for each document you are submitting (min. 2). Uploads go to Google Drive.
               </p>
               <div className="mt-2 space-y-2">
                 <Select value={docType} onValueChange={setDocType}>
@@ -541,15 +556,18 @@ function LoansPage() {
                 </Select>
                 <div className="flex gap-2">
                   <Input
-                    value={docName}
-                    onChange={(e) => setDocName(e.target.value)}
-                    placeholder="e.g. passport_scan.pdf"
+                    type="file"
+                    accept="image/*,application/pdf"
                     className="h-10"
+                    onChange={(e) => {
+                      void addDoc(e.target.files);
+                      e.target.value = "";
+                    }}
                   />
-                  <Button type="button" variant="outline" className="h-10 shrink-0" onClick={addDoc}>
-                    Add
-                  </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Files are stored in your secure Google Drive folder under this bank (max 5 MB each).
+                </p>
                 {docs.length > 0 && (
                   <ul className="space-y-1">
                     {docs.map((d, i) => (

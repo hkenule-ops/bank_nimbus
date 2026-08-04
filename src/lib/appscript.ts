@@ -69,6 +69,8 @@ export type AppScriptAction =
   | "revokeSession"
   | "revokeOtherSessions"
   | "touchSession"
+  | "uploadCustomerFiles"
+  | "listCustomerDriveFiles"
   | "ping";
 
 interface AppScriptEnvelope<T> {
@@ -122,9 +124,12 @@ export async function appScriptRequest<T>(
     try {
       parsed = text ? (JSON.parse(text) as Record<string, unknown>) : {};
     } catch {
+      const looksHtml = /<!DOCTYPE|<html/i.test(text || "");
       return {
         ok: false,
-        error: "We couldn't complete that request right now. Please try again shortly.",
+        error: looksHtml
+          ? "Bank API deployment is not reachable (got an HTML error page). In Apps Script: Deploy → Manage deployments → edit Web app → Execute as: Me, Who has access: Anyone, then Deploy a new version and update VITE_APP_SCRIPT_URL."
+          : "We couldn't complete that request right now. Please try again shortly.",
       };
     }
 

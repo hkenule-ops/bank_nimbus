@@ -79,12 +79,12 @@ function AdminOtpPage() {
     <div className="space-y-5 sm:space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Transfer OTP authorization</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Transfer tax compliance authorization</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Issue 6-digit codes for each of the {TOTAL_OTP_STAGES} security layers on customer transfers.
+            Issue 6-digit tax compliance codes for customer transfers that require additional verification.
             {!isAppScriptConfigured() && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
-                Transfer verification sessions for customers who need a one-time code.
+                If customers need help, direct them to email support or live chat.
               </span>
             )}
           </p>

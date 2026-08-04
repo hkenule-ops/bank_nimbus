@@ -142,7 +142,7 @@ function BenPage() {
           <div>
             <h1 className="text-xl font-bold sm:text-2xl">Beneficiaries</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Saved recipients for faster transfers. Changes sync to the bank backend.
+              
             </p>
           </div>
           <Button variant="outline" size="sm" className="h-10" onClick={() => void load()} disabled={loading}>
@@ -158,7 +158,7 @@ function BenPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-12 text-sm text-muted-foreground">
-              <Users className="h-8 w-8 opacity-40" />
+            Saved recipients for faster transfers.   <Users className="h-8 w-8 opacity-40" />
               No beneficiaries yet. Add one on the right.
             </div>
           ) : (

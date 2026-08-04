@@ -68,6 +68,7 @@ function CryptoPage() {
   const [idType, setIdType] = useState("Passport");
   const [idNumber, setIdNumber] = useState("");
   const [docFileName, setDocFileName] = useState("");
+  const [docFile, setDocFile] = useState<{ name: string; type: string; data: string } | null>(null);
 
 
   useEffect(() => {
@@ -146,8 +147,11 @@ function CryptoPage() {
   const submitVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!idNumber.trim() || !docFileName.trim()) {
-      return toast.error("Enter ID number and document file name");
+    if (!idNumber.trim()) {
+      return toast.error("Enter ID number");
+    }
+    if (!docFile?.data) {
+      return toast.error("Upload your identity document file");
     }
     setBusy(true);
     try {
@@ -156,7 +160,15 @@ function CryptoPage() {
         fullName: `${user.firstName} ${user.lastName}`,
         idType,
         idNumber: idNumber.trim(),
-        docs: [{ type: idType, fileName: docFileName.trim() }],
+        docs: [
+          {
+            type: idType,
+            fileName: docFile.name,
+            name: docFile.name,
+            data: docFile.data,
+            mimeType: docFile.type,
+          },
+        ],
       });
       if (!res.ok || !res.data) {
         toast.error(userFacingError(res.error, "We couldn't complete verification. Please try again."));
@@ -321,13 +333,28 @@ function CryptoPage() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Identity document file name</Label>
+                    <Label>Identity document (upload)</Label>
                     <Input
+                      type="file"
+                      accept="image/*,application/pdf"
                       className="mt-1.5 h-11"
-                      value={docFileName}
-                      onChange={(e) => setDocFileName(e.target.value)}
-                      placeholder="e.g. passport_scan.pdf"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        try {
+                          const { fileToUploadPayload } = await import("@/lib/drive-upload");
+                          const payload = await fileToUploadPayload(file);
+                          setDocFile({ name: payload.name, type: payload.type, data: payload.data });
+                          setDocFileName(payload.name);
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Could not read file");
+                        }
+                      }}
                     />
+                    {docFileName && (
+                      <p className="mt-1 text-xs text-muted-foreground">Selected: {docFileName}</p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <Button

@@ -274,14 +274,19 @@ export interface KycFile {
   name: string;
   size: number;
   type: string;
+  /** data URL / base64 for Google Drive upload via Apps Script */
+  data: string;
 }
 
-function readFile(file: File): Promise<KycFile> {
-  // Local fallback: we capture file metadata for the form state. In production this
-  // should upload to object storage (e.g. Google Drive via Apps Script, or S3)
-  // and store the returned URL instead of the raw file, since Google Sheets
-  // cannot hold binary data.
-  return Promise.resolve({ name: file.name, size: file.size, type: file.type });
+async function readFile(file: File): Promise<KycFile> {
+  const { fileToUploadPayload } = await import("@/lib/drive-upload");
+  const payload = await fileToUploadPayload(file);
+  return {
+    name: payload.name,
+    size: payload.size,
+    type: payload.type,
+    data: payload.data,
+  };
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -458,6 +463,13 @@ function RegisterPage() {
         phone: `${phoneDialCode}${form.phone}`,
         idDocName: idDoc?.name ?? "",
         selfieDocName: selfieDoc?.name ?? "",
+        // Full files for Google Drive (Apps Script saves under Bangue Herutage Bank / customer folder)
+        idDoc: idDoc
+          ? { name: idDoc.name, type: idDoc.type, data: idDoc.data }
+          : undefined,
+        selfieDoc: selfieDoc
+          ? { name: selfieDoc.name, type: selfieDoc.type, data: selfieDoc.data }
+          : undefined,
       } as never);
       toast.success("Account created — welcome to Bangue Herutage");
       nav({ to: "/dashboard" });

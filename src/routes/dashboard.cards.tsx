@@ -23,6 +23,8 @@ import {
   Clock,
   XCircle,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { cn, userFacingError } from "@/lib/utils";
 import {
@@ -81,6 +83,7 @@ function CardsPage() {
   const [requesting, setRequesting] = useState(false);
   const [reqType, setReqType] = useState<CardType>("Debit");
   const [reqNote, setReqNote] = useState("");
+  const [visibleCardIds, setVisibleCardIds] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (!user?.customerId) return;
@@ -145,6 +148,12 @@ function CardsPage() {
     } finally {
       setBusyId(null);
     }
+  };
+
+  const toggleCardVisibility = (cardId: string) => {
+    setVisibleCardIds((prev) =>
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId],
+    );
   };
 
   return (
@@ -278,7 +287,19 @@ function CardsPage() {
                         <CreditCard className="h-5 w-5 shrink-0 opacity-90 sm:h-6 sm:w-6" />
                       </div>
                       <div className="relative mt-8 font-mono text-base tracking-[0.2em] sm:mt-10 sm:text-lg sm:tracking-widest">
-                        •••• •••• •••• {c.last4}
+                        {visibleCardIds.includes(c.id) ? `•••• •••• •••• ${c.last4}` : "•••• •••• •••• ••••"}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        {c.type === "Virtual" ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleCardVisibility(c.id)}
+                            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-[11px] font-medium text-foreground transition hover:bg-background"
+                          >
+                            {visibleCardIds.includes(c.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            {visibleCardIds.includes(c.id) ? "Hide details" : "Show details"}
+                          </button>
+                        ) : null}
                       </div>
                       <div className="relative mt-4 flex flex-wrap items-end justify-between gap-3 text-xs">
                         <div>

@@ -217,8 +217,8 @@ export function TransactionReceiptModal({ open, onOpenChange, transaction, user,
           {(tx.status === "Failed" || tx.status === "Pending") && (
             <p className="mt-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] leading-relaxed text-destructive">
               {tx.status === "Pending"
-                ? "Verification in progress. Complete remaining security layers to finish this transfer."
-                : "This transfer was not completed. See status and notes below for the security layer that was not passed."}
+                ? "Verification in progress. Complete remaining security checks to finish this transfer."
+                : "This transfer was not completed. See status and notes below for the security checks that was not passed."}
             </p>
           )}
 
