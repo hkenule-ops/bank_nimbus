@@ -65,9 +65,20 @@ function LoginPage() {
       return;
     }
 
+    const isAdminLogin = ["admin", "admin@bangueherutage.com", "administrator"].includes(identifier.toLowerCase());
+
     setLoading(true);
     try {
-      // Try customer first, then admin — one form for both
+      if (isAdminLogin) {
+        const adminOk = await loginAdmin(identifier, password);
+        if (adminOk) {
+          toast.success("Admin session started");
+          nav({ to: "/admin" });
+          return;
+        }
+      }
+
+      // Try customer first, then admin for non-reserved identifiers
       const customerOk = await login(identifier, password);
       if (customerOk) {
         toast.success("Welcome back");
@@ -75,11 +86,13 @@ function LoginPage() {
         return;
       }
 
-      const adminOk = await loginAdmin(identifier, password);
-      if (adminOk) {
-        toast.success("Admin session started");
-        nav({ to: "/admin" });
-        return;
+      if (!isAdminLogin) {
+        const adminOk = await loginAdmin(identifier, password);
+        if (adminOk) {
+          toast.success("Admin session started");
+          nav({ to: "/admin" });
+          return;
+        }
       }
 
       toast.error("Those sign-in details don't match our records. Please try again.");
@@ -91,7 +104,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden gradient-hero flex flex-col justify-center items-center px-3 py-6 sm:px-4">
+    <div className="relative min-h-dvh w-full overflow-y-auto overflow-x-hidden gradient-hero flex flex-col justify-center items-center px-3 py-6 sm:px-4">
       <div className="absolute inset-0 animate-gradient-shift opacity-60" />
       <AmbientBlobs />
 
@@ -122,7 +135,7 @@ function LoginPage() {
         >
           <h1 className="text-xl sm:text-2xl font-semibold">Sign in</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            Customer secure portal.
+            Secure access for customers and administrators.
           </p>
 
           <form onSubmit={submit} className="mt-4 space-y-3 sm:space-y-4">

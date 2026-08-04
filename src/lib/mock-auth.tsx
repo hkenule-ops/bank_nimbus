@@ -345,8 +345,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const ADMIN_IDENTIFIERS = ["admin", "admin@bangueherutage.com", "administrator"] as const;
+  const isAdminIdentifier = (identifier: string) => {
+    const normalized = identifier.trim().toLowerCase();
+    return ADMIN_IDENTIFIERS.includes(normalized as typeof ADMIN_IDENTIFIERS[number]);
+  };
+
   const loginWithFallback = async (identifier: string, password: string) => {
     if (!identifier || !password) return false;
+
+    if (!isAppScriptConfigured() && isAdminIdentifier(identifier)) {
+      return false;
+    }
 
     if (isAppScriptConfigured()) {
       const response = await appScriptRequest<Customer & { transactions?: Transaction[]; sessionId?: string }>("login", {
