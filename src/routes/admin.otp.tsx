@@ -18,6 +18,12 @@ import {
   VERIFIED_MARKER,
 } from "@/lib/transfer-otp";
 import { isAppScriptConfigured } from "@/lib/appscript";
+import {
+  listCardOrderOtp,
+  adminGenerateCardOrderOtp,
+  isCodeActive,
+  type CardOrderOtpSession,
+} from "@/lib/card-order-otp";
 
 export const Route = createFileRoute("/admin/otp")({
   head: () => ({ meta: [{ title: "Transfer OTP — Admin" }, { name: "robots", content: "noindex" }] }),
@@ -29,12 +35,19 @@ function AdminOtpPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [lastCode, setLastCode] = useState<{ id: string; stage: number; code: string } | null>(null);
+  const [cardSessions, setCardSessions] = useState<CardOrderOtpSession[]>([]);
+  const [cardBusy, setCardBusy] = useState<string | null>(null);
+  const [lastCardCode, setLastCardCode] = useState<{ id: string; code: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await listTransferOtpSessions();
+      const [list, cards] = await Promise.all([
+        listTransferOtpSessions(),
+        listCardOrderOtp().catch(() => [] as CardOrderOtpSession[]),
+      ]);
       setSessions(list);
+      setCardSessions(cards);
     } finally {
       setLoading(false);
     }
@@ -72,8 +85,23 @@ function AdminOtpPage() {
     toast.success("Code copied");
   };
 
+  const generateCard = async (session: CardOrderOtpSession) => {
+    setCardBusy(session.id);
+    try {
+      const result = await adminGenerateCardOrderOtp(session.id);
+      setLastCardCode({ id: session.id, code: result.code });
+      setCardSessions((prev) => prev.map((s) => (s.id === result.session.id ? result.session : s)));
+      toast.success(`Card shipping OTP generated: ${result.code}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate code");
+    } finally {
+      setCardBusy(null);
+    }
+  };
+
   const pending = sessions.filter((s) => s.status === "pending");
   const recent = sessions.filter((s) => s.status !== "pending").slice(0, 15);
+  const pendingCards = cardSessions.filter((s) => s.status === "pending");
 
   return (
     <div className="space-y-5 sm:space-y-8">
@@ -166,6 +194,75 @@ function AdminOtpPage() {
           </div>
         </section>
       )}
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Card shipping authorization ({pendingCards.length})
+        </h2>
+        {lastCardCode && (
+          <Card className="mb-4 border-primary/40 bg-primary/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm font-medium">Last card shipping code</div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xl font-bold tracking-[0.2em] text-primary">{lastCardCode.code}</span>
+                <Button size="sm" variant="outline" onClick={() => copyCode(lastCardCode.code)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+        {pendingCards.length === 0 ? (
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            No pending card shipping OTP requests.
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {pendingCards.map((s) => (
+              <Card key={s.id} className="p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{s.customerName}</h3>
+                      <StatusBadge status={s.status} />
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {s.cardType} · {s.holderName} · {s.accountNumber}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Ship: {s.shippingSummary || "—"}
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">{s.id}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    {isCodeActive(s.code) ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-lg font-bold tracking-widest">{s.code}</span>
+                        <Button size="sm" variant="outline" onClick={() => copyCode(s.code!)}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={cardBusy === s.id} onClick={() => void generateCard(s)}>
+                          Regen
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="gradient-primary text-primary-foreground"
+                        disabled={cardBusy === s.id}
+                        onClick={() => void generateCard(s)}
+                      >
+                        {cardBusy === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Issue shipping code"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
     </div>
   );
 }
@@ -284,7 +381,7 @@ function SessionCard({
   );
 }
 
-function StatusBadge({ status }: { status: TransferOtpSession["status"] }) {
+function StatusBadge({ status }: { status: string }) {
   if (status === "pending") {
     return (
       <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">

@@ -365,6 +365,11 @@ function CardsPage() {
                         {c.customerId}
                       </div>
                       {c.note && <div>Customer note: “{c.note}”</div>}
+                      {c.shipAddress && (
+                        <div className="text-xs text-muted-foreground">
+                          Ship to: {[c.shipName, c.shipAddress, c.shipCity, c.shipState, c.shipPostal, c.shipCountry].filter(Boolean).join(", ")}
+                        </div>
+                      )}
                       <div>Requested {new Date(c.createdAt).toLocaleString()}</div>
                     </Card>
                     <div className="flex flex-wrap gap-2">

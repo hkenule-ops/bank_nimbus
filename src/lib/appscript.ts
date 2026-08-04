@@ -57,6 +57,12 @@ export type AppScriptAction =
   | "updateCard"
   | "deleteCard"
   | "adminIssueCard"
+  | "beginCardOrderOtp"
+  | "getCardOrderOtp"
+  | "listCardOrderOtp"
+  | "adminGenerateCardOrderOtp"
+  | "verifyCardOrderOtp"
+  | "cancelCardOrderOtp"
   // Beneficiaries
   | "listBeneficiaries"
   | "upsertBeneficiary"
