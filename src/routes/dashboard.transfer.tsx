@@ -533,7 +533,7 @@ function TransferPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {transferCleared
             ? "Security clearance is complete on this account — transfers no longer require OTP."
-            : `All 5 security layers are verified once, permanently. Incomplete transfers retain progress — pick up from where you left off.`}
+            : ``}
         </p>
       </div>
 

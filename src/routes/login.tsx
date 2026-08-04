@@ -122,7 +122,7 @@ function LoginPage() {
         >
           <h1 className="text-xl sm:text-2xl font-semibold">Sign in</h1>
           <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            Customer and staff access — one secure portal.
+            Customer secure portal.
           </p>
 
           <form onSubmit={submit} className="mt-4 space-y-3 sm:space-y-4">
@@ -131,13 +131,12 @@ function LoginPage() {
               style={{ transitionDelay: "220ms" }}
             >
               <Label htmlFor="id" className="text-xs sm:text-sm">
-                Email, username, or staff ID
+                Email or Username
               </Label>
               <Input
                 id="id"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
-                placeholder="you@email.com or admin"
                 autoComplete="username"
                 className="mt-1 h-11 text-sm transition-shadow duration-300 focus:shadow-[0_0_0_4px_rgba(201,170,84,0.15)]"
               />
@@ -204,7 +203,7 @@ function LoginPage() {
           }`}
           style={{ transitionDelay: "540ms" }}
         >
-          Customers use their account email. Staff use admin credentials — same page routes you automatically.
+          Customers sign in securely using their registered account information.
         </p>
       </div>
     </div>

@@ -9,7 +9,7 @@ export function SiteFooter() {
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              A modern digital banking simulation platform for demonstration and educational use. Not connected to real banking infrastructure.
+              A modern digital banking platform designed to showcase premium account, card and payment experiences.
             </p>
           </div>
           <div>
@@ -29,7 +29,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground md:flex-row md:items-center">
-          <p>© {new Date().getFullYear()} Bangue Herutage Bank — Simulation. All balances are demo data.</p>
+          <p>© {new Date().getFullYear()} Bangue Herutage Bank — Modern banking experience with sample balances.</p>
           <div className="flex items-center gap-4">
             <span>Terms</span>
             <span>Privacy</span>

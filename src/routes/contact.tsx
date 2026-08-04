@@ -44,13 +44,13 @@ function Contact() {
             transition={{ duration: 0.8 }}
           >
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1 text-sm backdrop-blur">
-              <Sparkles className="h-4 w-4" /> Let's Talk
+              <Sparkles className="h-4 w-4" /> Client Services
             </div>
             <h1 className="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">
-              We'd love to hear from you
+              Contact our support team
             </h1>
             <p className="mt-4 text-xl text-white/70">
-              Whether you have questions, feedback, or just want to say hello — we're here.
+              For account inquiries, payment questions, or service support, our team is ready to assist you.
             </p>
           </motion.div>
         </div>
@@ -158,7 +158,7 @@ function Contact() {
                 </Button>
 
                 <p className="text-center text-xs text-muted-foreground">
-                  We respect your inbox. No spam, ever.
+                  Your message is used only to respond to your inquiry and support your banking needs.
                 </p>
               </form>
             </div>
@@ -172,7 +172,7 @@ function Contact() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white">
             <MapPin className="mx-auto h-12 w-12 text-[#c9aa54] mb-4" />
-            <p className="text-lg font-medium">San Francisco, California</p>
+            <p className="text-lg font-medium">Zermatt, Switzerland</p>
           </div>
         </div>
       </div>

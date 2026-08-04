@@ -8,7 +8,7 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About — Bangue Herutage Bank" },
-      { name: "description", content: "Learn about the Bangue Herutage Bank digital banking simulation platform." },
+      { name: "description", content: "Learn about Bangue Herutage Bank and our modern digital banking platform." },
     ],
   }),
   component: About,
@@ -75,13 +75,13 @@ function About() {
             transition={{ delay: 0.3 }}
             className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm backdrop-blur mb-6"
           >
-            <Sparkles className="h-4 w-4" /> Since 2025
+            <Sparkles className="h-4 w-4" /> Established 2025
           </motion.div>
           <h1 className="text-6xl md:text-7xl font-bold tracking-tighter text-white">
-            The future of banking<br />starts with great <span className="text-[#c9aa54]">design</span>.
+            Trusted digital banking for everyday life and business.
           </h1>
           <p className="mt-6 text-xl text-white/80 max-w-2xl mx-auto">
-            Bangue Herutage is a premium digital banking simulation — built to inspire and demonstrate excellence in fintech interfaces.
+            Bangue Herutage Bank delivers secure online banking with fast account setup, reliable payment services, and intelligent financial tools.
           </p>
         </motion.div>
       </section>
@@ -95,7 +95,7 @@ function About() {
       >
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <p className="text-xl leading-relaxed text-muted-foreground">
-            Bangue Herutage Bank is a fully simulated digital banking platform created to showcase what modern retail banking can feel like — elegant, fast, trustworthy, and delightful.
+            Bangue Herutage Bank provides retail and business customers with modern digital banking solutions that prioritize clarity, security, and everyday convenience.
           </p>
         </div>
       </motion.div>
@@ -137,12 +137,10 @@ function About() {
             <h2 className="text-4xl font-bold tracking-tight">Our Story</h2>
             <div className="mt-8 space-y-6 text-lg text-muted-foreground">
               <p>
-                We set out to build something better — a banking experience that doesn't feel like banking software. 
-                One that feels calm, clear, and human.
+                Bangue Herutage was founded to bring a more reliable and accessible banking experience to customers who expect everyday banking to work without friction.
               </p>
               <p>
-                Every pixel, motion, and interaction was designed with intention. The result is Bangue Herutage — 
-                a complete reference implementation for teams building the next generation of financial products.
+                Our team combines rigorous operational standards with modern digital tools to deliver account services, payments, and financial insights people can trust.
               </p>
             </div>
           </motion.div>
@@ -173,8 +171,7 @@ function About() {
             </div>
             <h2 className="mt-4 text-4xl font-bold tracking-tight">Banking software people enjoy using</h2>
             <p className="mt-8 text-lg text-muted-foreground">
-              We believe financial tools should reduce stress, not create it. That’s why we obsess over clarity, 
-              delightful interactions, and thoughtful details that make complex tasks feel simple.
+              We believe banking should be straightforward, transparent, and dependable. Our focus is on delivering services that help customers manage money with confidence.
             </p>
           </motion.div>
         </motion.div>
@@ -196,18 +193,18 @@ function About() {
             {[
               {
                 img: "https://picsum.photos/id/201/600/400",
-                title: "Premium Experience",
-                desc: "Carefully designed interfaces that feel luxurious yet approachable."
+                title: "Premium Service",
+                desc: "Thoughtful account features and responsive support built for personal and business customers."
               },
               {
                 img: "https://picsum.photos/id/106/600/400",
-                title: "Realistic Simulation",
-                desc: "Balances, transfers, cards, and market data — all behaving like a real bank."
+                title: "Everyday Banking",
+                desc: "Secure balances, transfers, cards, and market insights with reliable operational behavior."
               },
               {
                 img: "https://picsum.photos/id/133/600/400",
-                title: "Built for Developers",
-                desc: "Clean architecture, modern stack, and thoughtful UX patterns you can learn from."
+                title: "Modern Infrastructure",
+                desc: "A clean digital platform designed to scale with customer needs and regulatory expectations."
               },
             ].map((item, i) => (
               <motion.div key={i} variants={fadeInUp} className="group">
@@ -242,10 +239,10 @@ function About() {
             <Award className="mx-auto h-16 w-16 text-[#c9aa54]" />
           </motion.div>
           <h2 className="mt-8 text-5xl font-bold tracking-tight">
-            Made for those who care about craft.
+            Built to deliver dependable digital banking.
           </h2>
           <p className="mt-6 text-xl text-white/70">
-            Whether you're a designer, developer, or fintech founder — we built Bangue Herutage to inspire you.
+            Bangue Herutage Bank offers practical account services, payment tools, and secure online access for individuals and businesses.
           </p>
           <motion.a
             href="/register"

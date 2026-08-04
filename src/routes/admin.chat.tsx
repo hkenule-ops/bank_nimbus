@@ -136,7 +136,7 @@ function AdminChatPage() {
             Reply to customer conversations.
             {!isChatConfigured() && (
               <span className="ml-1 text-amber-700 dark:text-amber-400">
-                Demo mode — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for live chat.
+                Local chat preview — configure Supabase for live backend support.
               </span>
             )}
           </p>

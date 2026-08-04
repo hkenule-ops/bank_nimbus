@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type CurrencyCode = "USD" | "CHF";
 
-// Static demo exchange rate — swap for a live FX API call if you want real-time rates.
+// Static exchange rate placeholder — swap for a live FX API call if you want real-time rates.
 const USD_TO_CHF_RATE = 0.88;
 
 interface CurrencyContextValue {

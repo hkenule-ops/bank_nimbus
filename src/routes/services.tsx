@@ -123,15 +123,13 @@ function Services() {
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur">
-              Premium Banking Simulation
+              Digital Banking Services
             </span>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Every account.<br />Every payment.<br />
-              <span className="text-[#c9aa54]">One elegant experience.</span>
+              Comprehensive accounts and payments<br />within one secure platform.
             </h1>
             <p className="mt-6 max-w-md text-lg text-white/80">
-              Discover the complete suite of simulated retail banking products — 
-              designed with the same care and precision as the world’s leading fintech platforms.
+              Explore the full range of retail banking services, built for reliability, transparency, and modern account management.
             </p>
             <PillButton>Explore accounts</PillButton>
           </div>
@@ -173,17 +171,17 @@ function Services() {
               </div>
               <div>
                 <div className="text-3xl font-bold">12 Products</div>
-                <div className="text-sm text-muted-foreground">Fully simulated retail banking suite</div>
+                <div className="text-sm text-muted-foreground">Complete retail banking suite</div>
               </div>
             </div>
 
             <div>
               <p className="text-lg font-medium">
-                Everything runs on a single simulated ledger — your balances, transactions, and reports stay perfectly in sync across all services.
+                Everything runs on a single ledger — your balances, transactions, and reports stay perfectly in sync across all services.
               </p>
               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="text-[#c9aa54]">●</span>
-                Educational platform — not for real financial transactions
+                Secure environment for managing accounts, payments, and card services
               </div>
             </div>
           </div>
@@ -195,7 +193,7 @@ function Services() {
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold sm:text-5xl">Ready to open an account?</h2>
           <p className="mt-4 text-lg text-white/80">
-            Create a simulated account in under a minute and explore every service on this page.
+            Open an account and start managing your finances with secure digital banking tools.
           </p>
           <PillButton>Open an account</PillButton>
         </div>

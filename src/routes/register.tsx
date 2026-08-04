@@ -23,14 +23,14 @@ function getFlagEmoji(iso2: string): string {
 }
 
 // Registration email OTP — uses the shared Apps Script backend (VITE_APP_SCRIPT_URL).
-// Demo mode accepts DEMO_OTP when the URL is not configured.
-const DEMO_OTP = "1234";
-const isDemoMode = !isAppScriptConfigured();
+// Local fallback accepts a fixed OTP when the backend URL is not configured.
+const FALLBACK_OTP = "1234";
+const isFallbackMode = !isAppScriptConfigured();
 
 async function requestEmailOtp(email: string) {
-  if (isDemoMode) {
+  if (isFallbackMode) {
     await new Promise((r) => setTimeout(r, 500));
-    return { ok: true, demo: true };
+    return { ok: true, fallback: true };
   }
   const res = await appScriptRequest<{ sent?: boolean }>("sendOtp", { email });
   if (!res.ok) throw new Error(res.error ?? "Failed to send verification code");
@@ -38,9 +38,9 @@ async function requestEmailOtp(email: string) {
 }
 
 async function verifyEmailOtp(email: string, code: string) {
-  if (isDemoMode) {
+  if (isFallbackMode) {
     await new Promise((r) => setTimeout(r, 300));
-    return code === DEMO_OTP;
+    return code === FALLBACK_OTP;
   }
   const res = await appScriptRequest<{ valid: boolean }>("verifyOtp", { email, code });
   if (!res.ok) throw new Error(res.error ?? "Failed to verify code");
@@ -277,7 +277,7 @@ export interface KycFile {
 }
 
 function readFile(file: File): Promise<KycFile> {
-  // Demo-only: we capture file metadata for the form state. In production this
+  // Local fallback: we capture file metadata for the form state. In production this
   // should upload to object storage (e.g. Google Drive via Apps Script, or S3)
   // and store the returned URL instead of the raw file, since Google Sheets
   // cannot hold binary data.
@@ -315,7 +315,7 @@ function RegisterPage() {
     accountType: "Savings Account",
   });
 
-  // KYC supporting documents (metadata only in this demo — see readFile above)
+// KYC supporting documents (stored as file metadata during local preview — see readFile above)
   const [idDoc, setIdDoc] = useState<KycFile | null>(null);
   const [selfieDoc, setSelfieDoc] = useState<KycFile | null>(null);
 
@@ -621,9 +621,9 @@ function RegisterPage() {
               )}
               {step === 3 && (
                 <div className="flex flex-col items-center py-4">
-                  {isDemoMode && (
+                  {isFallbackMode && (
                     <p className="mb-4 text-sm text-muted-foreground">
-                      For this session, use code <span className="font-mono font-semibold text-foreground">{DEMO_OTP}</span>
+                      Use code <span className="font-mono font-semibold text-foreground">{FALLBACK_OTP}</span> when backend verification services are unavailable.
                     </p>
                   )}
                   <InputOTP

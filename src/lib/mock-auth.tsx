@@ -214,7 +214,7 @@ function seedCustomer(overrides: Partial<Customer> = {}): Customer {
     firstName: "Alex",
     lastName: "Morgan",
     username: "alex.morgan",
-    email: "alex@demo.bangueherutage",
+    email: "alex@bangueherutage.com",
     phone: "+1 555 0100",
     accountType: "Savings Account",
     balance: 12450.75,
@@ -374,7 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const u = seedCustomer({
-      email: identifier.includes("@") ? identifier : "alex@demo.bangueherutage",
+      email: identifier.includes("@") ? identifier : "alex@bangueherutage.com",
       username: identifier.includes("@") ? "alex.morgan" : identifier,
     });
     persist(u, false);

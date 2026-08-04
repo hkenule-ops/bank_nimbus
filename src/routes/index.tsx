@@ -139,16 +139,25 @@ function AmbientBlobs() {
 
 function MarqueeTicker() {
   const items = [
-    "0.00% account fees",
-    "Instant transfers",
-    "OTP verification",
-    "Full transaction history",
-    "Virtual & physical cards",
-    "Foreign currency accounts",
-    "Live market rates",
-    "24/7 account access",
+    "No monthly maintenance fees (standard accounts)",
+    "Deposits insured where applicable",
+    "Two‑factor authentication (2FA)",
+    "Real‑time fraud monitoring",
+    "24/7 customer support",
+    "Instant bank transfers",
+    "Global ATM access",
+    "Mobile check deposit",
+    "Contactless & virtual cards",
+    "Card controls: freeze, limits & alerts",
+    "Paperless statements & eStatements",
+    "Competitive savings rates",
+    "Secure TLS encryption and data protection",
+    "Biometric login (Face ID / Touch ID)",
+    "Easy online account opening",
   ];
+
   const track = [...items, ...items];
+
   return (
     <div className="overflow-hidden border-y border-border/60 bg-muted/40 py-3">
       <div className="flex w-max animate-marquee gap-10">
@@ -238,7 +247,7 @@ function Hero() {
           <Reveal>
             <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 animate-spin-slow text-primary" />
-              Premium digital banking
+              Premium internet-banking
             </span>
           </Reveal>
           <Reveal delay={100}>
@@ -552,10 +561,6 @@ function Testimonials() {
 
 function FAQ() {
   const items = [
-    {
-      q: "Is Bangue Herutage Bank a real bank?",
-      a: "Yes. Bangue Herutage Bank is a digital bank offering everyday accounts, cards, transfers and related services.",
-    },
     {
       q: "How quickly can I open an account?",
       a: "Most accounts can be opened in minutes. Complete the application and verify your identity to start using your account.",

@@ -24,7 +24,7 @@ import { useLocation } from "@tanstack/react-router";
  * - Logged-in admins: open the same icon to list open threads and reply
  *   as the support agent (works on admin routes and the public site).
  *
- * Backend: Supabase when configured; otherwise UI still renders in demo mode.
+ * Backend: Supabase when configured; otherwise the chat UI runs locally.
  */
 export function LiveChat() {
   const { user, isAdmin, authReady } = useAuth();
@@ -154,7 +154,7 @@ function CustomerChatWidget({
       open={open}
       setOpen={setOpen}
       title="Bangue Herutage Support"
-      subtitle={isChatConfigured() ? "Live · connected" : "Demo mode · local session"}
+      subtitle={isChatConfigured() ? "Live · connected" : "Local session"}
       launcherClassName="md:bottom-5 bottom-[calc(5.5rem+env(safe-area-inset-bottom))]"
       panelClassName="md:bottom-24 bottom-[calc(9.5rem+env(safe-area-inset-bottom))]"
     >
@@ -311,7 +311,7 @@ function AdminChatWidget() {
           ? active.visitorEmail || active.visitorId
           : isChatConfigured()
             ? `${openCount} open · Live`
-            : `${openCount} open · Demo mode`
+            : `${openCount} open · Local session`
       }
       badge={openCount > 0 ? openCount : undefined}
       agent

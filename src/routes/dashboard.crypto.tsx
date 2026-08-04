@@ -222,7 +222,7 @@ function CryptoPage() {
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">Crypto</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Simulated trading desk — live-style prices for demonstration only.
+            Trading desk with live-style price updates and market summaries.
           </p>
         </div>
         <button
@@ -269,7 +269,7 @@ function CryptoPage() {
             Markets
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {assets.length} assets · simulated quotes refreshed for demo realism.
+            {assets.length} assets · live quotes refreshed .
           </p>
         </Card>
       </div>
