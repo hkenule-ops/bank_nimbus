@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArrowRight } from "lucide-react";
+import servicesHero from "@/assets/services_hero.jpg";
+import servicesAccounts from "@/assets/services_accounts.jpg";
+import servicesTransfer from "@/assets/services_transfer.jpg";
 
 export const Route = createFileRoute("/services")({
   head: () => ({
@@ -107,13 +110,6 @@ function AltSection({
 }
 
 function Services() {
-  // Placeholder images - replace with your own
-  const PLACEHOLDERS = {
-    hero: "https://picsum.photos/id/1015/1200/800",
-    accounts: "https://picsum.photos/id/201/800/600",
-    payments: "https://picsum.photos/id/106/800/600",
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -135,7 +131,7 @@ function Services() {
           </div>
 
           <div>
-            <ImagePanel src={PLACEHOLDERS.hero} alt="Bangue Herutage banking platform" />
+            <ImagePanel src={servicesHero} alt="Bangue Herutage banking platform" />
           </div>
         </div>
       </section>
@@ -146,7 +142,7 @@ function Services() {
         title="Built for however you bank"
         description="Savings, checking, business, joint, student, and premium accounts — each crafted with purpose and ready in moments."
         cta="Compare all accounts"
-        imageSrc={PLACEHOLDERS.accounts}
+        imageSrc={servicesAccounts}
         imageAlt="Banking account options"
       />
 
@@ -156,7 +152,7 @@ function Services() {
         title="Move money effortlessly"
         description="Instant transfers, multi-currency support, card management, and clear financial reporting — all in one beautiful interface."
         cta="Discover payment tools"
-        imageSrc={PLACEHOLDERS.payments}
+        imageSrc={servicesTransfer}
         imageAlt="Seamless payments"
         reverse
       />
