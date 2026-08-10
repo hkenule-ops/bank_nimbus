@@ -4,6 +4,12 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArrowRight, Sparkles, Award, Target } from "lucide-react";
 import { motion } from "framer-motion";
 
+import aboutHero from "@/assets/about_hero.jpg";
+import aboutStory from "@/assets/about_story.jpg";
+import aboutVision from "@/assets/about_vision.jpg";
+import aboutValueCard1 from "@/assets/about_valuecard_1.jpg";
+import aboutValueCard2 from "@/assets/about_value_card_2.jpg";
+
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
@@ -19,7 +25,7 @@ const GOLD_PRIMARY = "bg-[#c9aa54] text-primary-foreground hover:bg-[#c9a52f]";
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, ease: "easeOut" }
+  transition: { duration: 0.7, ease: "easeOut" },
 };
 
 const staggerContainer = {
@@ -60,9 +66,12 @@ function About() {
 
       {/* Full-bleed Hero */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/id/1015/2000/1200')] bg-cover bg-center" />
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${aboutHero})` }}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/70 to-black" />
-        
+
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -107,12 +116,7 @@ function About() {
         viewport={{ once: true }}
         className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border"
       >
-        {[
-          "https://picsum.photos/id/201/800/600",
-          "https://picsum.photos/id/106/800/600",
-          "https://picsum.photos/id/133/800/600",
-          "https://picsum.photos/id/1074/800/600",
-        ].map((src, i) => (
+        {[aboutHero, aboutStory, aboutVision, aboutValueCard1].map((src, i) => (
           <motion.div
             key={i}
             whileHover={{ scale: 1.03 }}
@@ -145,7 +149,7 @@ function About() {
             </div>
           </motion.div>
           <FullWidthImage
-            src="https://picsum.photos/id/1016/1200/800"
+            src={aboutStory}
             alt="Team working on banking interface"
             caption="Crafted with care by people who love beautiful software."
           />
@@ -160,7 +164,7 @@ function About() {
           className="grid lg:grid-cols-2 gap-16 items-center"
         >
           <FullWidthImage
-            src="https://picsum.photos/id/870/1200/800"
+            src={aboutVision}
             alt="Modern banking dashboard"
             caption="Customer dashboard — clean hierarchy and purposeful design."
           />
@@ -192,19 +196,19 @@ function About() {
           >
             {[
               {
-                img: "https://picsum.photos/id/201/600/400",
+                img: aboutValueCard1,
                 title: "Premium Service",
-                desc: "Thoughtful account features and responsive support built for personal and business customers."
+                desc: "Thoughtful account features and responsive support built for personal and business customers.",
               },
               {
-                img: "https://picsum.photos/id/106/600/400",
+                img: aboutValueCard2,
                 title: "Everyday Banking",
-                desc: "Secure balances, transfers, cards, and market insights with reliable operational behavior."
+                desc: "Secure balances, transfers, cards, and market insights with reliable operational behavior.",
               },
               {
-                img: "https://picsum.photos/id/133/600/400",
+                img: aboutVision,
                 title: "Modern Infrastructure",
-                desc: "A clean digital platform designed to scale with customer needs and regulatory expectations."
+                desc: "A clean digital platform designed to scale with customer needs and regulatory expectations.",
               },
             ].map((item, i) => (
               <motion.div key={i} variants={fadeInUp} className="group">
