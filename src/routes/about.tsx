@@ -84,7 +84,7 @@ function About() {
             transition={{ delay: 0.3 }}
             className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2 text-sm backdrop-blur mb-6"
           >
-            <Sparkles className="h-4 w-4" /> Established 2025
+            <Sparkles className="h-4 w-4" /> bangue herutage bank
           </motion.div>
           <h1 className="text-6xl md:text-7xl font-bold tracking-tighter text-white">
             Trusted digital banking for everyday life and business.
